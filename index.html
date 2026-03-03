@@ -96,31 +96,22 @@ function onPath(x,y,M){
 function buildSlots(){
   var W=cv.width,H=cv.height;
   TOWER_SLOTS=[];FARM_ZONES=[];
-  // 4 quadrants, grid of candidate positions
-  var quads=[
-    [0.02,0.02,3,2,0.11,0.11],
-    [0.65,0.02,3,2,0.10,0.09],
-    [0.02,0.63,3,2,0.11,0.11],
-    [0.40,0.63,3,2,0.11,0.11]
-  ];
-  for(var q=0;q<quads.length;q++){
-    var qs=quads[q],sx=qs[0],sy=qs[1],cols=qs[2],rows=qs[3],spx=qs[4],spy=qs[5];
-    for(var r=0;r<rows;r++){
-      for(var c=0;c<cols;c++){
-        var x=W*(sx+c*spx+spx/2);
-        var y=H*(sy+r*spy+spy/2);
-        if(!onPath(x,y,32)&&x>16&&y>16&&x<W-16&&y<H-16){
-          TOWER_SLOTS.push({x:x,y:y});
-        }
+  // Full-map grid: every 44px across whole canvas, filtered off path
+  var spacing=44,margin=22;
+  for(var gx=margin;gx<W-margin;gx+=spacing){
+    for(var gy=margin;gy<H-margin;gy+=spacing){
+      if(!onPath(gx,gy,30)){
+        TOWER_SLOTS.push({x:gx,y:gy});
       }
     }
   }
-  // Farm zones - hand-picked grassy spots
-  var fz=[[0.07,0.30],[0.19,0.52],[0.45,0.28],[0.74,0.36],[0.55,0.65],[0.74,0.87]];
-  for(var i=0;i<fz.length;i++){
-    var fx=W*fz[i][0],fy=H*fz[i][1];
-    if(!onPath(fx,fy,36)&&fx>16&&fy>16&&fx<W-16&&fy<H-16){
-      FARM_ZONES.push({x:fx,y:fy});
+  // Farm zones: denser grid of soil patches, also full map
+  var fspacing=55;
+  for(var fx=margin+10;fx<W-margin;fx+=fspacing){
+    for(var fy=margin+10;fy<H-margin;fy+=fspacing){
+      if(!onPath(fx,fy,34)){
+        FARM_ZONES.push({x:fx,y:fy});
+      }
     }
   }
 }
@@ -142,7 +133,7 @@ function nearSlot(x,y){
     var d=Math.hypot(s.x-x,s.y-y);
     if(d<bd){bd=d;best=s;}
   }
-  return bd<55?best:null;
+  return bd<40?best:null;
 }
 function nearZone(x,y){
   var best=null,bd=9999;
@@ -254,9 +245,16 @@ function hitBloon(b,p){
   if(b.dead||b.hp<=0)return;
   if(p.frz){if(p.permafrost)b.permafrost=true;b.frz=Math.max(b.frz,p.famt);}
   else{
+    var prevHp=b.hp;
     b.hp-=p.dmg;
+    var actualDmg=prevHp-Math.max(0,b.hp);
+    if(p.srcTower){p.srcTower.totalDmg=(p.srcTower.totalDmg||0)+actualDmg;}
     if(p.burn)b.burn=Math.max(b.burn,3);
-    if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,b.col,b.moab?20:7);updShop();b.dead=true;}
+    if(b.hp<=0){
+      $m+=b.rew;document.getElementById('mdisp').textContent=$m;
+      splParts(b.x,b.y,b.col,b.moab?20:7);updShop();b.dead=true;
+      if(p.srcTower){p.srcTower.pops=(p.srcTower.pops||0)+1;}
+    }
   }
 }
 
@@ -285,10 +283,12 @@ function update(dt){
         if((Math.hypot(b2.x-t.x,b2.y-t.y)<=st.range||st.range>=9999)&&b2.dist>bd){bd=b2.dist;best=b2;}
       }
       if(best){
+        t.shots=(t.shots||0)+1;
         projs.push({id:pid++,x:t.x,y:t.y,tx:best.x,ty:best.y,tid:best.id,
           spd:t.type==='laser'?9:6.5,type:t.type,dmg:st.dmg,col:TD[t.type].col,
           spl:st.splash,frz:t.type==='freeze',famt:st.freezeAmt,permafrost:st.permafrost,
-          burn:st.burnMode,chainCount:st.chainCount,clusterCount:st.clusterCount,nuke:st.nukeMode,done:false});
+          burn:st.burnMode,chainCount:st.chainCount,clusterCount:st.clusterCount,nuke:st.nukeMode,
+          done:false,srcTower:t});
         t.lf=now;
       }
     }
@@ -314,14 +314,33 @@ function update(dt){
   parts=parts.filter(function(p){return p.life>0;});
   for(var fi=0;fi<floaties.length;fi++){floaties[fi].y+=floaties[fi].vy*sm;floaties[fi].life-=.025*sm;}
   floaties=floaties.filter(function(f){return f.life>0;});
+  // Farm income drip - pays out continuously during waves (and slowly between waves)
+  for(var fmi=0;fmi<farms.length;fmi++){
+    var fm=farms[fmi];
+    var incPerSec=farmIncome(fm)/12; // spreads wave income over ~12 seconds
+    fm.farmTimer=(fm.farmTimer||0)+dt*sm;
+    if(fm.farmTimer>=1.0){
+      fm.farmTimer=0;
+      var payout=Math.round(incPerSec);
+      if(payout>0){
+        $m+=payout;fm.totalEarned=(fm.totalEarned||0)+payout;
+        document.getElementById('mdisp').textContent=$m;
+        spawnFloatie(fm.x,fm.y-20,'+$'+payout,'#86efac');
+        updShop();
+      }
+    }
+  }
+
   if(running&&spawnQ.length===0&&bloons.length===0&&!cleared){
     cleared=true;running=false;
-    var farmTotal=0;
-    for(var fmi=0;fmi<farms.length;fmi++){var inc=farmIncome(farms[fmi]);farmTotal+=inc;farms[fmi].wavesGrown=Math.min(farms[fmi].wavesGrown+1,3);spawnFloatie(farms[fmi].x,farms[fmi].y-20,'+$'+inc,'#86efac');}
-    var bon=50+$w*10;$m+=bon+farmTotal;document.getElementById('mdisp').textContent=$m;
+    // Grow farms at wave end
+    for(var fmi2=0;fmi2<farms.length;fmi2++){
+      farms[fmi2].wavesGrown=Math.min(farms[fmi2].wavesGrown+1,3);
+    }
+    var bon=50+$w*10;$m+=bon;document.getElementById('mdisp').textContent=$m;
     var sb=document.getElementById('startbtn');sb.textContent=$w>=TWAVES?'Done!':'Next Wave';sb.classList.remove('on');
-    var msg2='Wave '+$w+' cleared! +$'+bon;if(farmTotal>0)msg2+=' + Farm $'+farmTotal;
-    setMsg(msg2);updShop();if($w>=TWAVES)setTimeout(function(){endGame(true);},800);
+    setMsg('Wave '+$w+' cleared! +$'+bon+' bonus!');updShop();
+    if($w>=TWAVES)setTimeout(function(){endGame(true);},800);
   }
 }
 
@@ -564,13 +583,13 @@ function tap(x,y){
       var z=nearZone(x,y);
       if(!z){setMsg('Tap a glowing farm zone!');return;}
       $m-=cost;document.getElementById('mdisp').textContent=$m;
-      farms.push({x:z.x,y:z.y,up:0,wavesGrown:0});
+      farms.push({x:z.x,y:z.y,up:0,wavesGrown:0,totalEarned:0,farmTimer:0});
       prevSnap=null;updShop();setMsg('Crop Farm planted!');
     } else {
       var s=nearSlot(x,y);
       if(!s){setMsg('Tap a highlighted tower slot!');return;}
       $m-=cost;document.getElementById('mdisp').textContent=$m;
-      towers.push({x:s.x,y:s.y,type:selType,upA:0,upB:0,lf:0});
+      towers.push({x:s.x,y:s.y,type:selType,upA:0,upB:0,lf:0,pops:0,totalDmg:0,shots:0});
       prevSnap=null;updShop();setMsg(TD[selType].name+' placed!');
     }
   } else {
@@ -588,15 +607,28 @@ function showInfo(obj){
   if(isFarm){
     var inc=farmIncome(obj),stages=['Seedling','Growing','Mature','Max Farm'];
     var stage=Math.min(obj.wavesGrown,3);
-    el.innerHTML='<h3>Crop Farm - '+stages[stage]+'</h3><div>Earns $'+inc+' each wave</div>'
-      +(obj.up<3?'<div style="color:#86efac;margin-top:2px">Next: '+FARM_DEF.upgrades[obj.up]+' ($'+FARM_DEF.upgCosts[obj.up]+')</div>'
+    var earned=obj.totalEarned||0;
+    el.innerHTML='<h3>Crop Farm - '+stages[stage]+'</h3>'
+      +'<div>Earns ~$'+inc+'/wave (paid continuously)</div>'
+      +'<div style="margin-top:4px;padding:4px 6px;background:#0a2040;border-radius:5px;display:flex;gap:10px;">'
+      +'<div style="text-align:center;flex:1"><div style="color:#86efac;font-size:13px;font-weight:900">$'+earned+'</div><div style="color:#94a3b8;font-size:8px">TOTAL EARNED</div></div>'
+      +'<div style="text-align:center;flex:1"><div style="color:#fbbf24;font-size:13px;font-weight:900">Lv'+(obj.up+1)+'</div><div style="color:#94a3b8;font-size:8px">LEVEL</div></div>'
+      +'</div>'
+      +(obj.up<3?'<div style="color:#86efac;margin-top:4px">Next: '+FARM_DEF.upgrades[obj.up]+' ($'+FARM_DEF.upgCosts[obj.up]+')</div>'
         +'<button class="cbtn" style="margin-top:5px;background:#22c55e;color:#fff;font-size:10px;padding:5px 10px;" onclick="upgFarm()">Upgrade Farm $'+FARM_DEF.upgCosts[obj.up]+'</button>'
         :'<div style="color:#22c55e;margin-top:2px">Max Level!</div>');
   } else {
     var d=TD[obj.type],st=getTowerStats(obj);
     var canA=obj.upA<3&&obj.upB===0,canB=obj.upB<3&&obj.upA===0;
+    var pops=obj.pops||0,dmg=Math.round(obj.totalDmg||0),shots=obj.shots||0;
+    var statBar='<div style="margin-top:4px;padding:4px 6px;background:#0a2040;border-radius:5px;display:flex;gap:6px;">'
+      +'<div style="text-align:center;flex:1"><div style="color:#f43f5e;font-size:12px;font-weight:900">'+pops+'</div><div style="color:#94a3b8;font-size:8px">POPS</div></div>'
+      +'<div style="text-align:center;flex:1"><div style="color:#fb923c;font-size:12px;font-weight:900">'+dmg+'</div><div style="color:#94a3b8;font-size:8px">DAMAGE</div></div>'
+      +'<div style="text-align:center;flex:1"><div style="color:#60a5fa;font-size:12px;font-weight:900">'+shots+'</div><div style="color:#94a3b8;font-size:8px">SHOTS</div></div>'
+      +'</div>';
     var html='<h3>'+d.name+' - A:'+obj.upA+' B:'+obj.upB+'</h3>'
       +'<div>'+d.desc+' | Rng:'+Math.round(Math.min(st.range,400))+' Dmg:'+st.dmg.toFixed(1)+' Rate:'+st.rate.toFixed(1)+'/s</div>'
+      +statBar
       +'<div class="upg-paths">'
       +'<div class="upg-path"><h4>Green: '+d.pathA.name+'</h4>'
       +[0,1,2].map(function(i){return'<div style="font-size:9px;color:'+(obj.upA>i?'#86efac':'#94a3b8')+'">'+(obj.upA>i?'OK':'o')+' '+d.pathA.levels[i]+'</div>';}).join('')
