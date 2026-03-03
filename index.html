@@ -106,7 +106,7 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
     <button class="tbtn" id="bsn" onclick="selT('sniper')">&#128301;<br>Sniper<span class="tc"><br>&#128176;300</span></button>
     <button class="tbtn" id="bl" onclick="selT('laser')">&#128308;<br>Laser<span class="tc"><br>&#128176;350</span></button>
     <button class="tbtn" id="bb" onclick="selT('bomb')">&#128165;<br>Bomber<span class="tc"><br>&#128176;250</span></button>
-    <button class="tbtn" id="bfarm" onclick="selT('farm')">&#127806;<br>Farm<span class="tc"><br>&#128176;120</span><span class="farm-tag">+$$/wave</span></button>
+    <button class="tbtn" id="bfarm" onclick="selT('farm')">&#127974;<br>Bank<span class="tc"><br>&#128176;150</span><span class="farm-tag">+$$/wave</span></button>
   </div>
   <div style="display:flex;align-items:center;gap:6px;">
     <div id="msg">Select a tower or farm to see placement slots!</div>
@@ -219,9 +219,9 @@ var TD={
     pathA:{name:'Mega Bomb',levels:['Dmg x2+splash','Dmg x3','Nuke AoE'],costs:[200,250,380]},
     pathB:{name:'Cluster',levels:['3 mini bombs','5 mini bombs','8 cluster'],costs:[190,230,350]}}
 };
-var FARM_DEF={cost:120,name:'Crop Farm',baseIncome:30,
-  upgrades:['Fertilizer +$20/wave','Greenhouse +$40/wave','Mega Farm +$80/wave'],
-  upgCosts:[100,150,250]};
+var FARM_DEF={cost:150,name:'Bank',baseIncome:15,
+  upgrades:['Savings Account +$10/wave','Investment Fund +$20/wave','Vault Max +$35/wave'],
+  upgCosts:[120,180,300]};
 var BT=[
   {col:'#ef4444',hp:1,spd:1.2,rew:1,sz:14,name:'Red'},
   {col:'#3b82f6',hp:2,spd:1.1,rew:2,sz:15,name:'Blue'},
@@ -281,7 +281,7 @@ function pathPos(d){
 }
 function farmIncome(f){
   var i=FARM_DEF.baseIncome;
-  if(f.up>=1)i+=20;if(f.up>=2)i+=40;if(f.up>=3)i+=80;
+  if(f.up>=1)i+=10;if(f.up>=2)i+=20;if(f.up>=3)i+=35;
   return i;
 }
 function getTowerStats(t){
@@ -592,8 +592,8 @@ function draw(){
       cx.globalAlpha=1;
       cx.fillStyle='rgba(70,35,5,0.5)';
       for(var row=-1;row<=1;row++)cx.fillRect(fz.x-fhalf+5,fz.y+row*5-1,fz.sz-10,2);
-      cx.font='10px serif';cx.textAlign='center';cx.textBaseline='middle';
-      cx.fillText(isHov2?'\uD83C\uDF3E':'\uD83C\uDF31',fz.x,fz.y-1);
+      cx.font='11px serif';cx.textAlign='center';cx.textBaseline='middle';
+      cx.fillText(isHov2?'\uD83C\uDFE6':'&#36;',fz.x,fz.y-1);
     }
   }
 
@@ -604,17 +604,37 @@ function draw(){
     cx.beginPath();cx.arc(selObj.x,selObj.y,rng2,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
   }
 
-  // Farms (placed)
+  // Banks (placed)
   for(var fmi3=0;fmi3<farms.length;fmi3++){
     var f=farms[fmi3],fsel=f===selObj;
-    cx.fillStyle=fsel?'#854d0e':'#713f12';cx.beginPath();cx.arc(f.x,f.y,18,0,Math.PI*2);cx.fill();
-    cx.strokeStyle=fsel?'#fbbf24':'#a16207';cx.lineWidth=fsel?3:2;cx.beginPath();cx.arc(f.x,f.y,18,0,Math.PI*2);cx.stroke();
-    cx.fillStyle='#92400e';for(var fr=-1;fr<=1;fr++)cx.fillRect(f.x-10,f.y+fr*5-1,20,2);
-    var stage=Math.min(f.wavesGrown,3);
-    var fem=stage===0?'\uD83C\uDF31':stage===1?'\uD83C\uDF3F':'\uD83C\uDF3E';
-    cx.font=(10+stage*3)+'px serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(fem,f.x,f.y-3);
-    cx.fillStyle='#86efac';cx.font='bold 8px sans-serif';cx.fillText('+$'+farmIncome(f),f.x,f.y+12);
-    for(var fu=0;fu<f.up;fu++){var fa=(fu/3)*Math.PI*2-Math.PI/2;cx.fillStyle='#fbbf24';cx.beginPath();cx.arc(f.x+Math.cos(fa)*14,f.y+Math.sin(fa)*14,2.5,0,Math.PI*2);cx.fill();}
+    var fx=f.x,fy=f.y;
+    cx.save();
+    // Selection glow
+    if(fsel){cx.strokeStyle='rgba(255,220,0,.6)';cx.lineWidth=5;cx.globalAlpha=.5;cx.beginPath();cx.arc(fx,fy,21,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
+    // Building base
+    cx.fillStyle=fsel?'#1e3a5f':'#1e293b';
+    cx.strokeStyle=fsel?'#f5c842':'#475569';
+    cx.lineWidth=1.5;
+    cx.fillRect(fx-13,fy-8,26,16);cx.strokeRect(fx-13,fy-8,26,16);
+    // Roof / pediment
+    cx.fillStyle='#334155';
+    cx.beginPath();cx.moveTo(fx-15,fy-8);cx.lineTo(fx,fy-17);cx.lineTo(fx+15,fy-8);cx.closePath();cx.fill();
+    cx.strokeStyle='#64748b';cx.lineWidth=1;cx.stroke();
+    // Columns
+    cx.fillStyle='#94a3b8';
+    for(var col=-1;col<=1;col++){cx.fillRect(fx+col*7-1.5,fy-8,3,14);}
+    // Door
+    cx.fillStyle='#0f172a';cx.fillRect(fx-3,fy,6,8);
+    cx.fillStyle='#fbbf24';cx.beginPath();cx.arc(fx+2,fy+4,1,0,Math.PI*2);cx.fill();
+    // Dollar sign on roof
+    cx.fillStyle='#f5c842';cx.font='bold 8px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('$',fx,fy-12);
+    // Income label
+    cx.fillStyle='#86efac';cx.font='bold 7px sans-serif';cx.textAlign='center';
+    cx.fillText('+$'+farmIncome(f),fx,fy+14);
+    // Upgrade dots
+    for(var fu=0;fu<f.up;fu++){var fa=(fu/3)*Math.PI*2-Math.PI/2;cx.fillStyle='#fbbf24';cx.beginPath();cx.arc(fx+Math.cos(fa)*14,fy+Math.sin(fa)*14,2.5,0,Math.PI*2);cx.fill();}
+    cx.restore();
   }
 
   // Towers (placed)
@@ -688,7 +708,7 @@ function tap(x,y){
       var z=nearZone(x,y);if(!z){setMsg('Tap a glowing farm zone!');return;}
       $m-=cost;document.getElementById('mdisp').textContent=$m;
       farms.push({x:z.x,y:z.y,up:0,wavesGrown:0,totalEarned:0,farmTimer:0});
-      prevSnap=null;updShop();setMsg('Crop Farm planted!');
+      prevSnap=null;updShop();setMsg('Bank placed!');
     } else {
       var s=nearSlot(x,y);if(!s){setMsg('Tap a highlighted tower slot!');return;}
       $m-=cost;document.getElementById('mdisp').textContent=$m;
@@ -708,9 +728,9 @@ function showInfo(obj){
   var el=document.getElementById('info');el.style.display='block';
   var isFarm=!obj.type;
   if(isFarm){
-    var inc=farmIncome(obj),stages=['Seedling','Growing','Mature','Max Farm'];
-    var stage=Math.min(obj.wavesGrown,3),earned=obj.totalEarned||0;
-    el.innerHTML='<h3>Crop Farm &mdash; '+stages[stage]+'</h3>'
+    var inc=farmIncome(obj),stages=['Branch','Established','Investment','Vault'],earned=obj.totalEarned||0;
+    var stage=Math.min(obj.up,3);
+    el.innerHTML='<h3>&#127974; Bank &mdash; '+stages[stage]+'</h3>'
       +'<div>Earns ~$'+inc+'/wave (drips during combat)</div>'
       +'<div class="statbar">'
       +'<div class="statcell"><div class="statval" id="live-earned" style="color:#86efac">$'+earned+'</div><div class="statlbl">TOTAL EARNED</div></div>'
@@ -718,7 +738,7 @@ function showInfo(obj){
       +'</div>'
       +(obj.up<3
         ?'<div style="color:#86efac;margin-top:4px">Next: '+FARM_DEF.upgrades[obj.up]+' ($'+FARM_DEF.upgCosts[obj.up]+')</div>'
-         +'<button class="cbtn" style="margin-top:5px;background:#22c55e;color:#fff;font-size:10px;padding:5px 10px;" onclick="upgFarm()">Upgrade Farm $'+FARM_DEF.upgCosts[obj.up]+'</button>'
+         +'<button class="cbtn" style="margin-top:5px;background:#22c55e;color:#fff;font-size:10px;padding:5px 10px;" onclick="upgFarm()">Upgrade Bank $'+FARM_DEF.upgCosts[obj.up]+'</button>'
         :'<div style="color:#22c55e;margin-top:2px">Max Level!</div>');
   } else {
     var d=TD[obj.type],st=getTowerStats(obj);
@@ -784,7 +804,7 @@ function upgFarm(){
   var cost=FARM_DEF.upgCosts[selObj.up];if($m<cost){setMsg('Not enough money!');return;}
   $m-=cost;selObj.up++;document.getElementById('mdisp').textContent=$m;
   splParts(selObj.x,selObj.y,'#86efac',10);updShop();showInfo(selObj);
-  setMsg('Farm upgraded! Earns ~$'+farmIncome(selObj)+'/wave');
+  setMsg('Bank upgraded! Earns ~$'+farmIncome(selObj)+'/wave');
 }
 
 function sellSel(){
@@ -813,7 +833,7 @@ function selT(type){
   document.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('sel');});
   var ids={dart:'bd',cannon:'bc',freeze:'bf',sniper:'bsn',laser:'bl',bomb:'bb',farm:'bfarm'};
   if(ids[type])document.getElementById(ids[type]).classList.add('sel');
-  setMsg(type==='farm'?'Tap a glowing soil zone to plant!':'Tap a highlighted slot to place '+TD[type].name+'!');
+  setMsg(type==='farm'?'Tap a highlighted slot to place Bank!':'Tap a highlighted slot to place '+TD[type].name+'!');
   document.getElementById('cancelbtn').style.display='inline-block';
 }
 
@@ -825,12 +845,14 @@ function cancelSel(){
 }
 
 function updShop(){
-  var costs={dart:80,cannon:200,freeze:150,sniper:300,laser:350,bomb:250,farm:120};
+  var costs={dart:80,cannon:200,freeze:150,sniper:300,laser:350,bomb:250,farm:150};
   var ids={dart:'bd',cannon:'bc',freeze:'bf',sniper:'bsn',laser:'bl',bomb:'bb',farm:'bfarm'};
   for(var k in ids){var b=document.getElementById(ids[k]);if(b)b.classList.toggle('cant',$m<costs[k]);}
 }
 
 function setMsg(m){document.getElementById('msg').textContent=m;}
+
+function toggleSpd(){$s=$s===1?2:$s===2?3:1;document.getElementById('spdbtn').textContent='Speed '+$s+'x';}
 
 function startWave(){
   if(over||won||running)return;if($w>=TWAVES)return;
