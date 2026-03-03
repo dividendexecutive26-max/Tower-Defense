@@ -26,7 +26,7 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
 #startbtn.on{background:#f59e0b;}
 #sellbtn{background:#e84545;color:#fff;display:none;}
 #spdbtn{background:#7c3aed;color:#fff;}
-#msg{text-align:center;padding:3px;font-size:10px;color:#94a3b8;font-weight:600;min-height:20px;}
+#msg{flex:1;text-align:center;padding:3px;font-size:10px;color:#94a3b8;font-weight:600;min-height:20px;}
 #info{display:none;background:#0f3460;border-radius:9px;padding:6px 10px;margin-top:4px;font-size:10px;color:#e2e8f0;}
 #info h3{color:#f5c842;font-size:11px;margin-bottom:2px;}
 .upg-paths{display:flex;gap:6px;margin-top:5px;}
@@ -66,7 +66,7 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
     <button class="tbtn" id="bfarm" onclick="selT('farm')"><span class="ti">🌾</span>Farm<span class="tc">💰120</span><span class="farm-tag">+$$/wave</span></button>
   </div>
   <div style="display:flex;align-items:center;gap:6px;">
-    <div id="msg" style="flex:1;">Select a tower or farm, then tap the green area!</div>
+    <div id="msg">Select a tower or farm, then tap the green area!</div>
     <button id="cancelbtn" onclick="cancelSel()" style="display:none;padding:4px 9px;border-radius:7px;border:none;background:#475569;color:#fff;font-size:13px;font-weight:900;cursor:pointer;flex-shrink:0;line-height:1;" title="Cancel selection">✕</button>
   </div>
   <div id="ctrls">
@@ -83,7 +83,191 @@ let PP=[];
 function buildPath(){const W=cv.width,H=cv.height;PP=[{x:0,y:H*.15},{x:W*.26,y:H*.15},{x:W*.26,y:H*.46},{x:W*.63,y:H*.46},{x:W*.63,y:H*.18},{x:W*.88,y:H*.18},{x:W*.88,y:H*.76},{x:W*.38,y:H*.76},{x:W*.38,y:H*.59},{x:W*.12,y:H*.59},{x:W*.12,y:H*1.05}];}
 function doResize(){const w=Math.min(document.getElementById('canvas-container').clientWidth,480);cv.width=w;cv.height=Math.round(w*.8);buildPath();}
 
-// ── Tower definitions with 2-path upgrades ──
+// ── Tower drawing functions ──
+function drawTower(c, t, sel) {
+  const x=t.x, y=t.y;
+  const type=t.type;
+
+  // Base platform for all towers
+  c.save();
+  // Stone base
+  c.fillStyle = sel ? '#3a6090' : '#2a4060';
+  c.strokeStyle = sel ? '#f5c842' : '#4a7090';
+  c.lineWidth = sel ? 2.5 : 1.5;
+  c.beginPath();c.arc(x,y,15,0,Math.PI*2);c.fill();c.stroke();
+
+  if(type==='dart') {
+    // Gunner body: small figure with helmet
+    // Legs
+    c.fillStyle='#1e40af';
+    c.fillRect(x-5,y+4,4,7);c.fillRect(x+1,y+4,4,7);
+    // Body/vest
+    c.fillStyle='#2563eb';
+    c.fillRect(x-6,y-4,12,10);
+    // Arms
+    c.fillStyle='#1d4ed8';
+    c.fillRect(x-10,y-3,5,5);c.fillRect(x+5,y-3,5,5);
+    // Blowgun/dart gun (pointing right)
+    c.fillStyle='#94a3b8';
+    c.fillRect(x+3,y-1,12,3);
+    // Dart tip
+    c.fillStyle='#ef4444';
+    c.beginPath();c.moveTo(x+15,y+.5);c.lineTo(x+19,y+.5);c.lineTo(x+15,y-1.5);c.closePath();c.fill();
+    // Head/helmet
+    c.fillStyle='#fbbf24';
+    c.beginPath();c.arc(x-1,y-6,5,0,Math.PI*2);c.fill();
+    // Helmet visor
+    c.fillStyle='#1e3a5f';
+    c.beginPath();c.arc(x-1,y-5,3,0,Math.PI);c.fill();
+    // Eyes
+    c.fillStyle='#00d4ff';
+    c.beginPath();c.arc(x+1,y-6,1.2,0,Math.PI*2);c.fill();
+  }
+
+  else if(type==='cannon') {
+    // Stone turret base
+    c.fillStyle='#374151';
+    c.fillRect(x-9,y+2,18,9);
+    // Turret top
+    c.fillStyle='#4b5563';
+    c.beginPath();c.arc(x,y,9,Math.PI,0);c.fill();
+    // Battlements
+    c.fillStyle='#374151';
+    for(let i=-1;i<=1;i++){c.fillRect(x+i*6-2,y-12,4,5);}
+    // Cannon barrel
+    c.fillStyle='#111827';
+    c.save();c.translate(x,y-2);
+    c.fillRect(2,-3,14,6);
+    // Barrel highlight
+    c.fillStyle='#374151';c.fillRect(2,-1,14,2);
+    // Barrel end ring
+    c.fillStyle='#6b7280';c.fillRect(14,-4,4,8);
+    c.restore();
+    // Wheels
+    c.fillStyle='#1f2937';
+    c.beginPath();c.arc(x-6,y+8,4,0,Math.PI*2);c.fill();
+    c.beginPath();c.arc(x+6,y+8,4,0,Math.PI*2);c.fill();
+    c.fillStyle='#374151';
+    c.beginPath();c.arc(x-6,y+8,2,0,Math.PI*2);c.fill();
+    c.beginPath();c.arc(x+6,y+8,2,0,Math.PI*2);c.fill();
+    // Cannonball
+    c.fillStyle='#1f2937';
+    c.beginPath();c.arc(x+13,y-2,3,0,Math.PI*2);c.fill();
+  }
+
+  else if(type==='freeze') {
+    // Ice crystal tower
+    // Tower body
+    c.fillStyle='#0e7490';
+    c.fillRect(x-5,y-2,10,13);
+    // Crystal spires
+    const spires=[[0,-14,3],[−5,-10,2.5],[5,-10,2.5]];
+    const sp2=[[0,-14,3],[-5,-10,2.5],[5,-10,2.5]];
+    // Main spire
+    c.fillStyle='#a5f3fc';
+    c.beginPath();c.moveTo(x,y-16);c.lineTo(x-4,y-6);c.lineTo(x+4,y-6);c.closePath();c.fill();
+    c.strokeStyle='#67e8f9';c.lineWidth=1;c.stroke();
+    // Left spire
+    c.fillStyle='#7dd3fc';
+    c.beginPath();c.moveTo(x-5,y-12);c.lineTo(x-8,y-5);c.lineTo(x-2,y-5);c.closePath();c.fill();
+    // Right spire
+    c.beginPath();c.moveTo(x+5,y-12);c.lineTo(x+2,y-5);c.lineTo(x+8,y-5);c.closePath();c.fill();
+    // Snowflake on body
+    c.strokeStyle='#e0f7ff';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x-4,y+5);c.lineTo(x+4,y+5);c.stroke();
+    c.beginPath();c.moveTo(x,y+1);c.lineTo(x,y+9);c.stroke();
+    c.beginPath();c.moveTo(x-3,y+2);c.lineTo(x+3,y+8);c.stroke();
+    c.beginPath();c.moveTo(x+3,y+2);c.lineTo(x-3,y+8);c.stroke();
+    // Frost glow
+    c.globalAlpha=0.18;c.fillStyle='#a5f3fc';c.beginPath();c.arc(x,y,13,0,Math.PI*2);c.fill();c.globalAlpha=1;
+  }
+
+  else if(type==='sniper') {
+    // Tall watchtower
+    // Tower legs
+    c.strokeStyle='#78716c';c.lineWidth=2;
+    c.beginPath();c.moveTo(x-8,y+12);c.lineTo(x-3,y-2);c.stroke();
+    c.beginPath();c.moveTo(x+8,y+12);c.lineTo(x+3,y-2);c.stroke();
+    // Cross beams
+    c.beginPath();c.moveTo(x-7,y+5);c.lineTo(x+7,y+5);c.stroke();
+    c.beginPath();c.moveTo(x-5,y-1);c.lineTo(x+5,y-1);c.stroke();
+    // Platform
+    c.fillStyle='#44403c';c.fillRect(x-9,y-5,18,4);
+    // Sniper prone on platform
+    // Body
+    c.fillStyle='#15803d';
+    c.fillRect(x-7,y-9,14,4);
+    // Head
+    c.fillStyle='#854d0e';
+    c.beginPath();c.arc(x+5,y-8,3,0,Math.PI*2);c.fill();
+    // Sniper rifle
+    c.fillStyle='#1c1917';
+    c.fillRect(x-8,y-8,22,2);
+    // Scope
+    c.fillStyle='#78716c';c.fillRect(x+2,y-10,5,2);
+    // Muzzle flash hint
+    c.fillStyle='#fbbf24';c.beginPath();c.arc(x+14,y-7,1.5,0,Math.PI*2);c.fill();
+    // Bipod
+    c.strokeStyle='#57534e';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x-4,y-6);c.lineTo(x-6,y-3);c.stroke();
+    c.beginPath();c.moveTo(x-4,y-6);c.lineTo(x-2,y-3);c.stroke();
+  }
+
+  else if(type==='laser') {
+    // Sci-fi energy tower
+    // Base ring
+    c.fillStyle='#1e1b4b';c.beginPath();c.arc(x,y+6,8,0,Math.PI*2);c.fill();
+    c.strokeStyle='#6366f1';c.lineWidth=1.5;c.stroke();
+    // Tower column
+    c.fillStyle='#312e81';c.fillRect(x-4,y-8,8,14);
+    // Energy core (glowing orb)
+    const coreGrad=cx.createRadialGradient(x,y-4,1,x,y-4,7);
+    coreGrad.addColorStop(0,'#fff');coreGrad.addColorStop(0.3,'#f43f5e');coreGrad.addColorStop(1,'rgba(244,63,94,0)');
+    c.fillStyle=coreGrad;c.beginPath();c.arc(x,y-4,7,0,Math.PI*2);c.fill();
+    // Emitter dish
+    c.strokeStyle='#818cf8';c.lineWidth=2;
+    c.beginPath();c.arc(x,y-4,9,-.6,.6);c.stroke();
+    c.beginPath();c.arc(x,y-4,9,Math.PI-.6,Math.PI+.6);c.stroke();
+    // Pulsing ring
+    c.strokeStyle='rgba(244,63,94,0.4)';c.lineWidth=1;
+    c.beginPath();c.arc(x,y-4,12,0,Math.PI*2);c.stroke();
+    // Top antenna
+    c.strokeStyle='#a5b4fc';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(x,y-11);c.lineTo(x,y-16);c.stroke();
+    c.fillStyle='#f43f5e';c.beginPath();c.arc(x,y-16,2,0,Math.PI*2);c.fill();
+  }
+
+  else if(type==='bomb') {
+    // Mortar emplacement
+    // Sandbag ring
+    c.fillStyle='#92400e';
+    for(let i=0;i<8;i++){
+      const a=(i/8)*Math.PI*2;
+      c.beginPath();c.ellipse(x+Math.cos(a)*10,y+Math.sin(a)*10,4,3,a,0,Math.PI*2);c.fill();
+    }
+    c.fillStyle='#78350f';
+    for(let i=0;i<8;i++){
+      const a=((i+.5)/8)*Math.PI*2;
+      c.beginPath();c.ellipse(x+Math.cos(a)*10,y+Math.sin(a)*10,3,2.5,a,0,Math.PI*2);c.fill();
+    }
+    // Mortar tube
+    c.fillStyle='#1f2937';
+    c.save();c.translate(x,y);c.rotate(-Math.PI/4);
+    c.fillRect(-3,-12,6,12);
+    c.fillStyle='#374151';c.fillRect(-4,-13,8,4);
+    c.restore();
+    // Base plate
+    c.fillStyle='#374151';c.beginPath();c.ellipse(x,y+3,7,4,0,0,Math.PI*2);c.fill();
+    // Shell being loaded
+    c.fillStyle='#ca8a04';
+    c.beginPath();c.ellipse(x+5,y-5,3,4,Math.PI/5,0,Math.PI*2);c.fill();
+    c.fillStyle='#fbbf24';
+    c.beginPath();c.ellipse(x+6.5,y-8,2,2.5,Math.PI/5,0,Math.PI*2);c.fill();
+  }
+
+  c.restore();
+}
+
 const TD={
   dart:{cost:80,range:92,dmg:1,rate:1.4,col:'#4facfe',em:'🎯',name:'Dart',desc:'Fast reliable shots',
     pathA:{name:'Rapid Fire',levels:['Rate +40%','Rate +60%','ULTRA: x3 rate'],costs:[70,90,150]},
@@ -105,7 +289,6 @@ const TD={
     pathB:{name:'Cluster',levels:['3 mini bombs','5 mini bombs','8 mini cluster'],costs:[190,230,350]}},
 };
 
-// Farm definition (separate, no combat upgrades)
 const FARM_DEF={cost:120,em:'🌾',name:'Crop Farm',baseIncome:30,
   upgrades:['Fertilizer: +$20/wave','Greenhouse: +$40/wave','Mega Farm: +$80/wave'],
   upgCosts:[100,150,250]};
@@ -124,7 +307,6 @@ const BT=[
 ];
 const TWAVES=10;
 
-// State
 let $m=200,$l=20,$w=0,$s=1;
 let running=false,over=false,won=false,cleared=false;
 let towers=[],farms=[],bloons=[],projs=[],parts=[],floaties=[];
@@ -134,8 +316,6 @@ let prevPos=null,prevOk=false;
 let bid=0,pid=0;
 
 function genWave(w){const q=[],mx=Math.min(w-1,BT.length-1),n=12+w*5;for(let i=0;i<n;i++)q.push(Math.min(Math.floor(Math.random()*(mx+1)),mx));return q;}
-
-// Path helpers
 function pathLen(){let t=0;for(let i=1;i<PP.length;i++){const dx=PP[i].x-PP[i-1].x,dy=PP[i].y-PP[i-1].y;t+=Math.hypot(dx,dy);}return t;}
 function pathPos(d){let r=d;for(let i=1;i<PP.length;i++){const dx=PP[i].x-PP[i-1].x,dy=PP[i].y-PP[i-1].y,s=Math.hypot(dx,dy);if(r<=s){const t=r/s;return{x:PP[i-1].x+dx*t,y:PP[i-1].y+dy*t};}r-=s;}return PP[PP.length-1];}
 function onPath(x,y,M=26){for(let i=1;i<PP.length;i++){const ax=PP[i-1].x,ay=PP[i-1].y,bx=PP[i].x,by=PP[i].y,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/len));if(Math.hypot(x-ax-t*dx,y-ay-t*dy)<M)return true;}return false;}
@@ -146,42 +326,33 @@ function spawnBloon(ti){const d=BT[ti];bloons.push({id:bid++,ti,dist:-30,hp:d.hp
 function getTowerStats(t){
   const d=TD[t.type];
   let dmg=d.dmg,rate=d.rate,range=d.range,splash=t.type==='cannon'?28:t.type==='bomb'?35:0;
-  let chains=t.type==='laser'?0:0,freezeAmt=1.8,permafrost=false,critEvery=0,infiniteRange=false;
-  let clusterCount=0,nukeMode=false,burnMode=false,chainCount=0;
-  // Path A
+  let freezeAmt=1.8,permafrost=false,infiniteRange=false,burnMode=false,chainCount=0,clusterCount=0,nukeMode=false;
   const pa=t.upA;
   if(t.type==='dart'){if(pa>=1)rate*=1.4;if(pa>=2)rate*=1.6;if(pa>=3)rate*=3;}
   if(t.type==='cannon'){if(pa>=1)splash*=1.5;if(pa>=2)splash*=2;if(pa>=3){splash*=3;nukeMode=true;}}
   if(t.type==='freeze'){if(pa>=1)freezeAmt=3;if(pa>=2)freezeAmt=5;if(pa>=3)permafrost=true;}
-  if(t.type==='sniper'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;if(pa>=3)critEvery=5;}
+  if(t.type==='sniper'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;}
   if(t.type==='laser'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;if(pa>=3)burnMode=true;}
   if(t.type==='bomb'){if(pa>=1){dmg*=2;splash*=1.5;}if(pa>=2)dmg*=3;if(pa>=3){nukeMode=true;splash*=2;}}
-  // Path B
   const pb=t.upB;
-  if(t.type==='dart'){if(pb>=1)dmg*=2;if(pb>=2)dmg*=3;if(pb>=3)dmg*=3;} // pierce handled in hit
+  if(t.type==='dart'){if(pb>=1)dmg*=2;if(pb>=2)dmg*=3;}
   if(t.type==='cannon'){if(pb>=1)rate*=1.5;if(pb>=2)rate*=1.8;}
   if(t.type==='freeze'){if(pb>=1)range*=1.4;if(pb>=2)range*=1.6;if(pb>=3)range*=2;}
   if(t.type==='sniper'){if(pb>=1)rate*=1.6;if(pb>=2)rate*=2;if(pb>=3)infiniteRange=true;}
   if(t.type==='laser'){if(pb>=1)chainCount=2;if(pb>=2)chainCount=4;if(pb>=3)chainCount=6;}
   if(t.type==='bomb'){if(pb>=1)clusterCount=3;if(pb>=2)clusterCount=5;if(pb>=3)clusterCount=8;}
-  return{dmg,rate,range:infiniteRange?9999:range,splash,freezeAmt,permafrost,critEvery,burnMode,chainCount,clusterCount,nukeMode};
+  return{dmg,rate,range:infiniteRange?9999:range,splash,freezeAmt,permafrost,burnMode,chainCount,clusterCount,nukeMode};
 }
 
-function farmIncome(f){
-  let inc=FARM_DEF.baseIncome;
-  if(f.up>=1)inc+=20;if(f.up>=2)inc+=40;if(f.up>=3)inc+=80;
-  return inc;
-}
-
+function farmIncome(f){let inc=FARM_DEF.baseIncome;if(f.up>=1)inc+=20;if(f.up>=2)inc+=40;if(f.up>=3)inc+=80;return inc;}
 function farmGrowthStage(f){return Math.min(f.wavesGrown,3);}
 
 function spawnProj(t,target,stats){
-  const pierce=t.type==='dart'&&t.upB>=3?3:1;
   projs.push({id:pid++,x:t.x,y:t.y,tx:target.x,ty:target.y,tid:target.id,
     spd:t.type==='laser'?9:6.5,type:t.type,dmg:stats.dmg,col:TD[t.type].col,
     spl:stats.splash,frz:t.type==='freeze',famt:stats.freezeAmt,permafrost:stats.permafrost,
     burn:stats.burnMode,chainCount:stats.chainCount,clusterCount:stats.clusterCount,
-    nuke:stats.nukeMode,pierce,hits:0,done:false,sourceT:t});
+    nuke:stats.nukeMode,done:false});
 }
 
 function splParts(x,y,col,n=6){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1.5+Math.random()*3;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,col,life:1,sz:3+Math.random()*4});}}
@@ -189,26 +360,12 @@ function spawnFloatie(x,y,txt,col='#f5c842'){floaties.push({x,y,txt,col,life:1,v
 
 function hitBloon(b,p){
   if(b.dead||b.hp<=0)return;
-  if(p.frz){
-    if(p.permafrost)b.permafrost=true;
-    b.frz=Math.max(b.frz,p.famt);
-  } else {
-    b.hp-=p.dmg;
-    if(p.burn)b.burn=Math.max(b.burn,3);
-    if(b.hp<=0){
-      $m+=b.rew;document.getElementById('mdisp').textContent=$m;
-      splParts(b.x,b.y,b.col,b.moab?20:7);
-      updShop();b.dead=true;
-    }
-  }
+  if(p.frz){if(p.permafrost)b.permafrost=true;b.frz=Math.max(b.frz,p.famt);}
+  else{b.hp-=p.dmg;if(p.burn)b.burn=Math.max(b.burn,3);if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,b.col,b.moab?20:7);updShop();b.dead=true;}}
 }
 
-function lighten(h){
-  try{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgb(${Math.min(255,r+55)},${Math.min(255,g+55)},${Math.min(255,b+55)})`;}
-  catch{return h;}
-}
+function lighten(h){try{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`rgb(${Math.min(255,r+55)},${Math.min(255,g+55)},${Math.min(255,b+55)})`;}catch{return h;}}
 
-// ── Update ──
 let lt=0;
 function update(dt){
   if(over||won)return;
@@ -218,85 +375,57 @@ function update(dt){
   for(const b of bloons){
     if(b.dead)continue;
     if(b.burn>0){b.burn-=dt*sm;b.hp-=0.8*dt*sm;if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,'#fb923c',8);updShop();b.dead=true;continue;}}
-    let s=b.spd;
-    if(b.permafrost)s*=.5;
-    else if(b.frz>0){b.frz-=dt*sm;s*=.12;}
+    let s=b.spd;if(b.permafrost)s*=.5;else if(b.frz>0){b.frz-=dt*sm;s*=.12;}
     b.dist+=s*55*dt*sm;
     if(b.dist>=pl){b.dead=true;$l=Math.max(0,$l-1);splParts(b.x,b.y,b.col,3);document.getElementById('ldisp').textContent=$l;if($l<=0&&!over)endGame(false);}
     else{const p=pathPos(b.dist);b.x=p.x;b.y=p.y;}
   }
   bloons=bloons.filter(b=>!b.dead&&b.hp>0);
-
   const now=performance.now()/1000;
   for(const t of towers){
     if(!t.lf)t.lf=0;
-    const stats=getTowerStats(t);
-    const iv=(1/stats.rate)/sm;
+    const stats=getTowerStats(t),iv=(1/stats.rate)/sm;
     if(now-t.lf>=iv){
-      let targets=[];
-      for(const b of bloons){if((Math.hypot(b.x-t.x,b.y-t.y)<=stats.range||stats.range>=9999)&&b.dist>=(targets[0]?.dist||0)){if(b.dist>(targets[0]?.dist||-1)){targets=[b];}}}
-      if(targets.length){spawnProj(t,targets[0],stats);t.lf=now;}
+      let best=null,bd=-1;
+      for(const b of bloons){if((Math.hypot(b.x-t.x,b.y-t.y)<=stats.range||stats.range>=9999)&&b.dist>bd){bd=b.dist;best=b;}}
+      if(best){spawnProj(t,best,stats);t.lf=now;}
     }
   }
-
   for(const p of projs){
-    const tgt=bloons.find(b=>b.id===p.tid);
-    if(tgt){p.tx=tgt.x;p.ty=tgt.y;}
+    const tgt=bloons.find(b=>b.id===p.tid);if(tgt){p.tx=tgt.x;p.ty=tgt.y;}
     const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
     if(d<p.spd*sm*2){
-      p.done=true;
-      splParts(p.tx,p.ty,p.col,p.spl>0||p.nuke?10:3);
+      p.done=true;splParts(p.tx,p.ty,p.col,p.spl>0||p.nuke?10:3);
       const splR=p.nuke?120:p.spl;
       if(splR>0){for(const b of bloons)if(Math.hypot(b.x-p.tx,b.y-p.ty)<=splR)hitBloon(b,p);}
-      else if(tgt){
-        hitBloon(tgt,p);
-        // chain for laser
-        if(p.chainCount>0){
-          let chained=0,last=tgt;
-          for(const b of bloons){if(b!==tgt&&chained<p.chainCount&&Math.hypot(b.x-last.x,b.y-last.y)<80){hitBloon(b,p);chained++;last=b;}}
-        }
-        // pierce
-        if(p.pierce>1){let pc=1;for(const b of bloons){if(b!==tgt&&pc<p.pierce&&Math.hypot(b.x-p.tx,b.y-p.ty)<30){hitBloon(b,p);pc++;}}}
-        // cluster bombs
-        if(p.clusterCount>0){for(let i=0;i<p.clusterCount;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;for(const b of bloons){if(Math.hypot(b.x-(p.tx+Math.cos(a)*r),b.y-(p.ty+Math.sin(a)*r))<25){hitBloon(b,{...p,dmg:p.dmg*.5,spl:0,clusterCount:0});}}}}
-      }
+      else if(tgt){hitBloon(tgt,p);if(p.chainCount>0){let ch=0,last=tgt;for(const b of bloons){if(b!==tgt&&ch<p.chainCount&&Math.hypot(b.x-last.x,b.y-last.y)<80){hitBloon(b,p);ch++;last=b;}}}
+      if(p.clusterCount>0){for(let i=0;i<p.clusterCount;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*40;for(const b of bloons){if(Math.hypot(b.x-(p.tx+Math.cos(a)*r),b.y-(p.ty+Math.sin(a)*r))<25)hitBloon(b,{...p,dmg:p.dmg*.5,spl:0,clusterCount:0});}}}}
     } else {p.x+=dx/d*p.spd*sm;p.y+=dy/d*p.spd*sm;}
   }
   projs=projs.filter(p=>!p.done);
   for(const p of parts){p.x+=p.vx*sm;p.y+=p.vy*sm;p.vy+=.12*sm;p.life-=.03*sm;}
   parts=parts.filter(p=>p.life>0);
-  for(const f of floaties){f.x+=0;f.y+=f.vy*sm;f.life-=.025*sm;}
+  for(const f of floaties){f.y+=f.vy*sm;f.life-=.025*sm;}
   floaties=floaties.filter(f=>f.life>0);
-
   if(running&&spawnQ.length===0&&bloons.length===0&&!cleared){
     cleared=true;running=false;
-    // Farm income
     let farmTotal=0;
-    for(const f of farms){
-      const inc=farmIncome(f);farmTotal+=inc;f.wavesGrown=Math.min(f.wavesGrown+1,3);
-      spawnFloatie(f.x,f.y-20,`+$${inc}`,'#86efac');
-    }
-    const bon=50+$w*10;
-    $m+=bon+farmTotal;document.getElementById('mdisp').textContent=$m;
+    for(const f of farms){const inc=farmIncome(f);farmTotal+=inc;f.wavesGrown=Math.min(f.wavesGrown+1,3);spawnFloatie(f.x,f.y-20,`+$${inc}`,'#86efac');}
+    const bon=50+$w*10;$m+=bon+farmTotal;document.getElementById('mdisp').textContent=$m;
     const sb=document.getElementById('startbtn');sb.textContent=$w>=TWAVES?'🏆 Done!':'▶ Next Wave';sb.classList.remove('on');
-    let msg=`🎉 Wave ${$w} cleared! +$${bon} wave bonus`;
-    if(farmTotal>0)msg+=` + 🌾$${farmTotal} farm income!`;
-    setMsg(msg);updShop();
-    if($w>=TWAVES)setTimeout(()=>endGame(true),800);
+    let msg=`🎉 Wave ${$w} cleared! +$${bon}`;if(farmTotal>0)msg+=` + 🌾$${farmTotal}`;
+    setMsg(msg);updShop();if($w>=TWAVES)setTimeout(()=>endGame(true),800);
   }
 }
 
 function endGame(w){if(w){won=true;document.getElementById('winover').style.display='flex';}else{over=true;document.getElementById('gotext').textContent=`Survived to wave ${$w}`;document.getElementById('goover').style.display='flex';}}
 
-// ── Draw ──
 function draw(){
   const W=cv.width,H=cv.height;cx.clearRect(0,0,W,H);
   cx.fillStyle='#2d7a2d';cx.fillRect(0,0,W,H);
   cx.strokeStyle='rgba(0,0,0,.05)';cx.lineWidth=1;
   for(let x=0;x<W;x+=22){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
   for(let y=0;y<H;y+=22){cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke();}
-
-  // Path
   cx.lineCap='round';cx.lineJoin='round';
   cx.strokeStyle='rgba(0,0,0,.2)';cx.lineWidth=44;
   cx.beginPath();cx.moveTo(PP[0].x,PP[0].y);for(let i=1;i<PP.length;i++)cx.lineTo(PP[i].x,PP[i].y);cx.stroke();
@@ -311,42 +440,29 @@ function draw(){
   // Farms
   for(const f of farms){
     const stage=farmGrowthStage(f),sel=f===selObj;
-    // Plot
     cx.fillStyle=sel?'#854d0e':'#713f12';cx.beginPath();cx.arc(f.x,f.y,18,0,Math.PI*2);cx.fill();
     cx.strokeStyle=sel?'#fbbf24':'#a16207';cx.lineWidth=sel?3:2;cx.beginPath();cx.arc(f.x,f.y,18,0,Math.PI*2);cx.stroke();
-    // Soil rows
-    cx.fillStyle='#92400e';for(let r=-1;r<=1;r++){cx.fillRect(f.x-10,f.y+r*5-1,20,2);}
-    // Crops based on growth stage
-    const cropEmojis=['🌱','🌿','🌾'];
+    cx.fillStyle='#92400e';for(let r=-1;r<=1;r++)cx.fillRect(f.x-10,f.y+r*5-1,20,2);
     const em=stage===0?'🌱':stage===1?'🌿':'🌾';
-    cx.font=`${10+stage*3}px serif`;cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(em,f.x,f.y-3);
-    // Income label
-    cx.fillStyle='#86efac';cx.font='bold 8px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(`+$${farmIncome(f)}`,f.x,f.y+12);
-    // Upgrade dots
+    cx.font=`${10+stage*3}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(em,f.x,f.y-3);
+    cx.fillStyle='#86efac';cx.font='bold 8px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(`+$${farmIncome(f)}`,f.x,f.y+12);
     for(let u=0;u<f.up;u++){const a=(u/3)*Math.PI*2-Math.PI/2;cx.fillStyle='#fbbf24';cx.beginPath();cx.arc(f.x+Math.cos(a)*14,f.y+Math.sin(a)*14,2.5,0,Math.PI*2);cx.fill();}
   }
 
-  // Range ring for selected tower
+  // Range ring
   if(selObj&&selObj.type){
-    const stats=getTowerStats(selObj);
-    const rng=Math.min(stats.range,400);
+    const stats=getTowerStats(selObj),rng=Math.min(stats.range,400);
     cx.strokeStyle='rgba(255,255,255,.22)';cx.lineWidth=1.5;cx.setLineDash([5,5]);
     cx.beginPath();cx.arc(selObj.x,selObj.y,rng,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
   }
 
-  // Towers
+  // Towers — drawn art
   for(const t of towers){
-    const d=TD[t.type],sel=t===selObj;
-    cx.fillStyle=sel?'#2a5a9f':'#1e3a5f';cx.beginPath();cx.arc(t.x,t.y,16,0,Math.PI*2);cx.fill();
-    cx.strokeStyle=d.col;cx.lineWidth=sel?3:2;cx.beginPath();cx.arc(t.x,t.y,16,0,Math.PI*2);cx.stroke();
-    if(sel){cx.strokeStyle='rgba(255,220,0,.55)';cx.lineWidth=4;cx.globalAlpha=.5;cx.beginPath();cx.arc(t.x,t.y,20,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
-    // Path A upgrades (green dots top)
-    for(let u=0;u<t.upA;u++){const a=-Math.PI/2+(u-1)*.4;cx.fillStyle='#22c55e';cx.beginPath();cx.arc(t.x+Math.cos(a)*13,t.y+Math.sin(a)*13,2.5,0,Math.PI*2);cx.fill();}
-    // Path B upgrades (orange dots bottom)
-    for(let u=0;u<t.upB;u++){const a=Math.PI/2+(u-1)*.4;cx.fillStyle='#f97316';cx.beginPath();cx.arc(t.x+Math.cos(a)*13,t.y+Math.sin(a)*13,2.5,0,Math.PI*2);cx.fill();}
-    cx.font='13px serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(d.em,t.x,t.y);
+    const sel=t===selObj;
+    if(sel){cx.strokeStyle='rgba(255,220,0,.6)';cx.lineWidth=5;cx.globalAlpha=.5;cx.beginPath();cx.arc(t.x,t.y,21,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
+    drawTower(cx,t,sel);
+    for(let u=0;u<t.upA;u++){const a=-Math.PI/2+(u-1)*.4;cx.fillStyle='#22c55e';cx.beginPath();cx.arc(t.x+Math.cos(a)*15,t.y+Math.sin(a)*15,2.5,0,Math.PI*2);cx.fill();}
+    for(let u=0;u<t.upB;u++){const a=Math.PI/2+(u-1)*.4;cx.fillStyle='#f97316';cx.beginPath();cx.arc(t.x+Math.cos(a)*15,t.y+Math.sin(a)*15,2.5,0,Math.PI*2);cx.fill();}
   }
 
   // Bloons
@@ -368,14 +484,10 @@ function draw(){
   for(const p of projs){
     cx.fillStyle=p.col;cx.beginPath();cx.arc(p.x,p.y,p.type==='cannon'||p.type==='bomb'?6.5:p.type==='laser'?3:4,0,Math.PI*2);cx.fill();
     if(p.type==='laser'){cx.strokeStyle=p.col;cx.lineWidth=2;cx.globalAlpha=.4;cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(p.tx,p.ty);cx.stroke();cx.globalAlpha=1;}
-    if((p.spl>0||p.nuke)&&p.type!=='done'){const r=p.nuke?60:p.spl*.5;cx.strokeStyle=p.col;cx.lineWidth=1;cx.globalAlpha=.15;cx.beginPath();cx.arc(p.x,p.y,r,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
   }
 
-  // Particles
   for(const p of parts){cx.globalAlpha=p.life;cx.fillStyle=p.col;cx.beginPath();cx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2);cx.fill();}
   cx.globalAlpha=1;
-
-  // Floaties
   for(const f of floaties){cx.globalAlpha=f.life;cx.fillStyle=f.col;cx.font='bold 11px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(f.txt,f.x,f.y);}
   cx.globalAlpha=1;
 
@@ -386,12 +498,11 @@ function draw(){
     cx.globalAlpha=.58;cx.fillStyle=prevOk?col:'#ef4444';cx.beginPath();cx.arc(prevPos.x,prevPos.y,16,0,Math.PI*2);cx.fill();
     if(!isFarm){cx.globalAlpha=.12;cx.fillStyle=prevOk?col:'#ef4444';cx.beginPath();cx.arc(prevPos.x,prevPos.y,TD[selType].range,0,Math.PI*2);cx.fill();}
     cx.globalAlpha=1;
-    cx.font='13px serif';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(isFarm?'🌾':TD[selType].em,prevPos.x,prevPos.y);
+    if(!isFarm){drawTower(cx,{x:prevPos.x,y:prevPos.y,type:selType,upA:0,upB:0},false);}
+    else{cx.font='14px serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('🌾',prevPos.x,prevPos.y);}
   }
 }
 
-// ── Input ──
 function getXY(cX,cY){const r=cv.getBoundingClientRect();return{x:(cX-r.left)*(cv.width/r.width),y:(cY-r.top)*(cv.height/r.height)};}
 function updPrev(x,y){prevPos={x,y};prevOk=!onPath(x,y)&&!anyOvlp(x,y)&&x>10&&y>10&&x<cv.width-10&&y<cv.height-10;}
 cv.addEventListener('mousemove',e=>{if(selType){const p=getXY(e.clientX,e.clientY);updPrev(p.x,p.y);}});
@@ -402,17 +513,15 @@ cv.addEventListener('click',e=>{const p=getXY(e.clientX,e.clientY);tap(p.x,p.y);
 
 function tap(x,y){
   if(selType){
-    const isFarm=selType==='farm';
-    const cost=isFarm?FARM_DEF.cost:TD[selType].cost;
+    const isFarm=selType==='farm',cost=isFarm?FARM_DEF.cost:TD[selType].cost;
     if($m<cost){setMsg('❌ Not enough money!');return;}
     if(onPath(x,y)){setMsg('❌ Cannot place on path!');return;}
     if(anyOvlp(x,y)){setMsg('❌ Too close to another object!');return;}
     if(x<10||y<10||x>cv.width-10||y>cv.height-10){setMsg('❌ Too close to edge!');return;}
     $m-=cost;document.getElementById('mdisp').textContent=$m;
-    if(isFarm){farms.push({x,y,up:0,wavesGrown:0});}
-    else{towers.push({x,y,type:selType,upA:0,upB:0,lf:0});}
-    prevPos=null;updShop();
-    setMsg(`✅ ${isFarm?FARM_DEF.name:TD[selType].name} placed!`);
+    if(isFarm)farms.push({x,y,up:0,wavesGrown:0});
+    else towers.push({x,y,type:selType,upA:0,upB:0,lf:0});
+    prevPos=null;updShop();setMsg(`✅ ${isFarm?FARM_DEF.name:TD[selType].name} placed!`);
   } else {
     let hit=null;
     for(const t of towers)if(Math.hypot(t.x-x,t.y-y)<21){hit=t;break;}
@@ -428,30 +537,23 @@ function showInfo(obj){
   if(isFarm){
     const inc=farmIncome(obj),stage=farmGrowthStage(obj);
     const stages=['🌱 Seedling','🌿 Growing','🌾 Mature','🌾 Max'];
-    el.innerHTML=`<h3>🌾 Crop Farm — ${stages[stage]}</h3>
-      <div>Earns 💰${inc} automatically each wave</div>
-      ${obj.up<3?`<div style="color:#86efac;margin-top:2px">Next upgrade: ${FARM_DEF.upgrades[obj.up]} (💰${FARM_DEF.upgCosts[obj.up]})</div>
+    el.innerHTML=`<h3>🌾 Crop Farm — ${stages[stage]}</h3><div>Earns 💰${inc} automatically each wave</div>
+      ${obj.up<3?`<div style="color:#86efac;margin-top:2px">Next: ${FARM_DEF.upgrades[obj.up]} (💰${FARM_DEF.upgCosts[obj.up]})</div>
       <button class="cbtn" style="margin-top:5px;background:#22c55e;color:#fff;font-size:10px;padding:5px 10px;" onclick="upgFarm()">⬆ Upgrade Farm 💰${FARM_DEF.upgCosts[obj.up]}</button>`
-      :'<div style="color:#22c55e;margin-top:2px">✨ Max Level Farm!</div>'}`;
+      :'<div style="color:#22c55e;margin-top:2px">✨ Max Level!</div>'}`;
   } else {
     const d=TD[obj.type],stats=getTowerStats(obj);
-    const paMax=obj.upA>=3,pbMax=obj.upB>=3;
-    const canA=obj.upA<3&&obj.upB===0;
-    const canB=obj.upB<3&&obj.upA===0;
-    el.innerHTML=`<h3>${d.em} ${d.name} — A:${obj.upA} / B:${obj.upB}</h3>
+    const canA=obj.upA<3&&obj.upB===0,canB=obj.upB<3&&obj.upA===0;
+    el.innerHTML=`<h3>${d.name} — Path A:${obj.upA} / B:${obj.upB}</h3>
       <div>${d.desc} | Rng:${Math.round(Math.min(stats.range,400))} Dmg:${stats.dmg.toFixed(1)} Rate:${stats.rate.toFixed(1)}/s</div>
       <div class="upg-paths">
-        <div class="upg-path">
-          <h4>🟢 ${d.pathA.name}</h4>
+        <div class="upg-path"><h4>🟢 ${d.pathA.name}</h4>
           ${[0,1,2].map(i=>`<div style="font-size:9px;color:${obj.upA>i?'#86efac':'#94a3b8'}">${obj.upA>i?'✅':'○'} ${d.pathA.levels[i]}</div>`).join('')}
-          ${!paMax?`<button class="upg-btn patha" ${!canA||$m<d.pathA.costs[obj.upA]?'disabled':''} onclick="upgPath('A')">
-            ${canA?`Upgrade 💰${d.pathA.costs[obj.upA]}`:(obj.upB>0?'Path B taken':'Max')}</button>`:'<div style="color:#22c55e;font-size:9px">✨ Maxed!</div>'}
+          ${obj.upA<3?`<button class="upg-btn patha" ${!canA||$m<d.pathA.costs[obj.upA]?'disabled':''} onclick="upgPath('A')">${canA?`Upgrade 💰${d.pathA.costs[obj.upA]}`:(obj.upB>0?'Path B taken':'Max')}</button>`:'<div style="color:#22c55e;font-size:9px">✨ Maxed!</div>'}
         </div>
-        <div class="upg-path">
-          <h4>🟠 ${d.pathB.name}</h4>
+        <div class="upg-path"><h4>🟠 ${d.pathB.name}</h4>
           ${[0,1,2].map(i=>`<div style="font-size:9px;color:${obj.upB>i?'#fdba74':'#94a3b8'}">${obj.upB>i?'✅':'○'} ${d.pathB.levels[i]}</div>`).join('')}
-          ${!pbMax?`<button class="upg-btn pathb" ${!canB||$m<d.pathB.costs[obj.upB]?'disabled':''} onclick="upgPath('B')">
-            ${canB?`Upgrade 💰${d.pathB.costs[obj.upB]}`:(obj.upA>0?'Path A taken':'Max')}</button>`:'<div style="color:#fdba74;font-size:9px">✨ Maxed!</div>'}
+          ${obj.upB<3?`<button class="upg-btn pathb" ${!canB||$m<d.pathB.costs[obj.upB]?'disabled':''} onclick="upgPath('B')">${canB?`Upgrade 💰${d.pathB.costs[obj.upB]}`:(obj.upA>0?'Path A taken':'Max')}</button>`:'<div style="color:#fdba74;font-size:9px">✨ Maxed!</div>'}
         </div>
       </div>`;
   }
@@ -461,33 +563,16 @@ function showInfo(obj){
 function upgPath(path){
   if(!selObj||!selObj.type)return;
   const d=TD[selObj.type];
-  if(path==='A'){
-    if(selObj.upB>0){setMsg('❌ Already on Path B!');return;}
-    if(selObj.upA>=3){setMsg('Path A maxed!');return;}
-    const cost=d.pathA.costs[selObj.upA];
-    if($m<cost){setMsg('❌ Not enough money!');return;}
-    $m-=cost;selObj.upA++;
-  } else {
-    if(selObj.upA>0){setMsg('❌ Already on Path A!');return;}
-    if(selObj.upB>=3){setMsg('Path B maxed!');return;}
-    const cost=d.pathB.costs[selObj.upB];
-    if($m<cost){setMsg('❌ Not enough money!');return;}
-    $m-=cost;selObj.upB++;
-  }
-  document.getElementById('mdisp').textContent=$m;
-  splParts(selObj.x,selObj.y,'#fbbf24',10);
-  updShop();showInfo(selObj);
+  if(path==='A'){if(selObj.upB>0){setMsg('❌ Already on Path B!');return;}if(selObj.upA>=3)return;const cost=d.pathA.costs[selObj.upA];if($m<cost){setMsg('❌ Not enough money!');return;}$m-=cost;selObj.upA++;}
+  else{if(selObj.upA>0){setMsg('❌ Already on Path A!');return;}if(selObj.upB>=3)return;const cost=d.pathB.costs[selObj.upB];if($m<cost){setMsg('❌ Not enough money!');return;}$m-=cost;selObj.upB++;}
+  document.getElementById('mdisp').textContent=$m;splParts(selObj.x,selObj.y,'#fbbf24',10);updShop();showInfo(selObj);
   setMsg(`⬆ Upgraded ${path==='A'?TD[selObj.type].pathA.name:TD[selObj.type].pathB.name}!`);
 }
 
 function upgFarm(){
-  if(!selObj||selObj.type)return;
-  if(selObj.up>=3){setMsg('Farm is max level!');return;}
-  const cost=FARM_DEF.upgCosts[selObj.up];
-  if($m<cost){setMsg('❌ Not enough money!');return;}
-  $m-=cost;selObj.up++;document.getElementById('mdisp').textContent=$m;
-  splParts(selObj.x,selObj.y,'#86efac',10);
-  updShop();showInfo(selObj);
+  if(!selObj||selObj.type)return;if(selObj.up>=3)return;
+  const cost=FARM_DEF.upgCosts[selObj.up];if($m<cost){setMsg('❌ Not enough money!');return;}
+  $m-=cost;selObj.up++;document.getElementById('mdisp').textContent=$m;splParts(selObj.x,selObj.y,'#86efac',10);updShop();showInfo(selObj);
   setMsg(`🌾 Farm upgraded! Now earns 💰${farmIncome(selObj)}/wave`);
 }
 
@@ -495,7 +580,7 @@ function sellSel(){
   if(!selObj)return;
   const isFarm=!selObj.type;
   let refund;
-  if(isFarm){refund=Math.floor(FARM_DEF.cost*.6+FARM_DEF.upgCosts.slice(0,selObj.up).reduce((a,b)=>a+b,0)*.5);}
+  if(isFarm)refund=Math.floor(FARM_DEF.cost*.6+FARM_DEF.upgCosts.slice(0,selObj.up).reduce((a,b)=>a+b,0)*.5);
   else{const d=TD[selObj.type];refund=Math.floor(d.cost*.6+(d.pathA.costs.slice(0,selObj.upA).reduce((a,b)=>a+b,0)+d.pathB.costs.slice(0,selObj.upB).reduce((a,b)=>a+b,0))*.5);}
   $m+=refund;document.getElementById('mdisp').textContent=$m;
   towers=towers.filter(t=>t!==selObj);farms=farms.filter(f=>f!==selObj);
@@ -511,10 +596,10 @@ function selT(type){
   document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
   const ids={dart:'bd',cannon:'bc',freeze:'bf',sniper:'bsn',laser:'bl',bomb:'bb',farm:'bfarm'};
   if(ids[type])document.getElementById(ids[type]).classList.add('sel');
-  const name=type==='farm'?FARM_DEF.name:TD[type].name;
-  setMsg(`📍 Tap the grass to place ${name}!`);
+  setMsg(`📍 Tap the grass to place ${type==='farm'?FARM_DEF.name:TD[type].name}!`);
   document.getElementById('cancelbtn').style.display='inline-block';
 }
+
 function cancelSel(){
   selType=null;prevPos=null;
   document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
@@ -532,9 +617,7 @@ function setMsg(m){document.getElementById('msg').textContent=m;}
 
 function startWave(){
   if(over||won||running)return;if($w>=TWAVES)return;
-  $w++;cleared=false;selType=null;
-  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('info').style.display='none';document.getElementById('sellbtn').style.display='none';
+  $w++;cleared=false;selType=null;cancelSel();
   spawnQ=genWave($w);spawnT=0;running=true;
   document.getElementById('wdisp').textContent=$w;
   const sb=document.getElementById('startbtn');sb.textContent=`🌊 Wave ${$w}/${TWAVES}`;sb.classList.add('on');
@@ -553,6 +636,7 @@ function restart(){
   document.getElementById('goover').style.display='none';document.getElementById('winover').style.display='none';
   document.getElementById('info').style.display='none';document.getElementById('sellbtn').style.display='none';
   document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('cancelbtn').style.display='none';
   setMsg('Select a tower or farm, then tap the green area!');updShop();
 }
 
