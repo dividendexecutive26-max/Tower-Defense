@@ -352,8 +352,8 @@ function update(dt){
     if($w>=TWAVES)setTimeout(function(){endGame(true);},800);
   }
 
-  // Live-update selected info panel
-  if(selObj)showInfo(selObj);
+  // Live-update stats numbers only (never re-render buttons)
+  if(selObj)liveUpdateInfo(selObj);
 }
 
 function endGame(w){
@@ -610,7 +610,7 @@ function showInfo(obj){
     el.innerHTML='<h3>Crop Farm &mdash; '+stages[stage]+'</h3>'
       +'<div>Earns ~$'+inc+'/wave (drips during combat)</div>'
       +'<div class="statbar">'
-      +'<div class="statcell"><div class="statval" style="color:#86efac">$'+earned+'</div><div class="statlbl">TOTAL EARNED</div></div>'
+      +'<div class="statcell"><div class="statval" id="live-earned" style="color:#86efac">$'+earned+'</div><div class="statlbl">TOTAL EARNED</div></div>'
       +'<div class="statcell"><div class="statval" style="color:#fbbf24">Lv '+(obj.up+1)+'</div><div class="statlbl">LEVEL</div></div>'
       +'</div>'
       +(obj.up<3
@@ -624,9 +624,9 @@ function showInfo(obj){
     el.innerHTML='<h3>'+d.name+' &mdash; A:'+obj.upA+' / B:'+obj.upB+'</h3>'
       +'<div>'+d.desc+' | Rng:'+Math.round(Math.min(st.range,400))+' Dmg:'+st.dmg.toFixed(1)+' Rate:'+st.rate.toFixed(1)+'/s</div>'
       +'<div class="statbar">'
-      +'<div class="statcell"><div class="statval" style="color:#f43f5e">'+pops+'</div><div class="statlbl">POPS</div></div>'
-      +'<div class="statcell"><div class="statval" style="color:#fb923c">'+dmg+'</div><div class="statlbl">DAMAGE</div></div>'
-      +'<div class="statcell"><div class="statval" style="color:#60a5fa">'+shots+'</div><div class="statlbl">SHOTS</div></div>'
+      +'<div class="statcell"><div class="statval" id="live-pops" style="color:#f43f5e">'+pops+'</div><div class="statlbl">POPS</div></div>'
+      +'<div class="statcell"><div class="statval" id="live-dmg" style="color:#fb923c">'+dmg+'</div><div class="statlbl">DAMAGE</div></div>'
+      +'<div class="statcell"><div class="statval" id="live-shots" style="color:#60a5fa">'+shots+'</div><div class="statlbl">SHOTS</div></div>'
       +'</div>'
       +'<div class="upg-paths">'
       +'<div class="upg-path"><h4>&#127823; '+d.pathA.name+'</h4>'
@@ -639,6 +639,22 @@ function showInfo(obj){
       +'</div></div>';
   }
   document.getElementById('sellbtn').style.display='inline-block';
+}
+
+// Only update the stat numbers, never re-render buttons
+function liveUpdateInfo(obj){
+  if(!obj)return;
+  if(!obj.type){
+    var e=document.getElementById('live-earned');
+    if(e)e.textContent='$'+(obj.totalEarned||0);
+  } else {
+    var ep=document.getElementById('live-pops');
+    var ed=document.getElementById('live-dmg');
+    var es=document.getElementById('live-shots');
+    if(ep)ep.textContent=obj.pops||0;
+    if(ed)ed.textContent=Math.round(obj.totalDmg||0);
+    if(es)es.textContent=obj.shots||0;
+  }
 }
 
 function upgPath(path){
