@@ -200,27 +200,27 @@ function nearZone(x,y){
 }
 
 var TD={
-  dart:{cost:80,range:92,dmg:1,rate:1.4,col:'#4facfe',name:'Dart',desc:'Fast reliable shots',
+  dart:{cost:80,range:115,dmg:1,rate:1.4,col:'#4facfe',name:'Dart',desc:'Fast reliable shots',
     pathA:{name:'Rapid Fire',levels:['Rate +40%','Rate +60%','ULTRA x3 rate'],costs:[70,90,150]},
     pathB:{name:'Sharp Shots',levels:['Dmg x2','Dmg x3','Pierce 3'],costs:[80,100,180]}},
-  cannon:{cost:200,range:80,dmg:3,rate:.5,col:'#f97316',name:'Cannon',desc:'Explosive splash',
+  cannon:{cost:200,range:100,dmg:3,rate:.5,col:'#f97316',name:'Cannon',desc:'Explosive splash',
     pathA:{name:'Big Bomb',levels:['Splash +50%','Splash x2','MOAB Shredder'],costs:[130,160,250]},
     pathB:{name:'Rapid Cannon',levels:['Rate +50%','Rate +80%','Dual target'],costs:[120,150,220]}},
-  freeze:{cost:150,range:85,dmg:0,rate:.6,col:'#67e8f9',name:'Ice',desc:'Slows balloons',
+  freeze:{cost:150,range:105,dmg:0,rate:.6,col:'#67e8f9',name:'Ice',desc:'Slows balloons',
     pathA:{name:'Deep Freeze',levels:['Freeze 3s','Freeze 5s','Permafrost'],costs:[100,130,200]},
     pathB:{name:'Blizzard',levels:['Range +40%','Area burst','Arctic Storm'],costs:[110,140,210]}},
-  sniper:{cost:300,range:220,dmg:5,rate:.38,col:'#c084fc',name:'Sniper',desc:'Long range high dmg',
+  sniper:{cost:300,range:270,dmg:5,rate:.38,col:'#c084fc',name:'Sniper',desc:'Long range high dmg',
     pathA:{name:'Deadly Aim',levels:['Dmg x2','Dmg x3','Crit every 5th'],costs:[160,200,300]},
     pathB:{name:'Full Auto',levels:['Rate +60%','Rate x2','Infinite range'],costs:[150,190,280]}},
-  laser:{cost:350,range:110,dmg:2,rate:2.2,col:'#f43f5e',name:'Laser',desc:'Rapid beam chains',
+  laser:{cost:350,range:135,dmg:2,rate:2.2,col:'#f43f5e',name:'Laser',desc:'Rapid beam chains',
     pathA:{name:'Overcharge',levels:['Dmg x2','Dmg x3','Burn DoT'],costs:[180,220,320]},
     pathB:{name:'Chain Beam',levels:['Chain 2','Chain 4','Chain 6+MOAB'],costs:[170,210,300]}},
-  bomb:{cost:250,range:95,dmg:4,rate:.45,col:'#fb923c',name:'Bomber',desc:'Large area blast',
+  bomb:{cost:250,range:118,dmg:4,rate:.45,col:'#fb923c',name:'Bomber',desc:'Large area blast',
     pathA:{name:'Mega Bomb',levels:['Dmg x2+splash','Dmg x3','Nuke AoE'],costs:[200,250,380]},
     pathB:{name:'Cluster',levels:['3 mini bombs','5 mini bombs','8 cluster'],costs:[190,230,350]}}
 };
-var FARM_DEF={cost:150,name:'Bank',baseIncome:15,
-  upgrades:['Savings Account +$10/wave','Investment Fund +$20/wave','Vault Max +$35/wave'],
+var FARM_DEF={cost:150,name:'Bank',baseIncome:22,
+  upgrades:['Savings Account +$15/wave','Investment Fund +$30/wave','Vault Max +$55/wave'],
   upgCosts:[120,180,300]};
 var BT=[
   {col:'#ef4444',hp:1, spd:1.2,rew:1, sz:14,name:'Red',   leak:1},
@@ -281,7 +281,7 @@ function pathPos(d){
 }
 function farmIncome(f){
   var i=FARM_DEF.baseIncome;
-  if(f.up>=1)i+=10;if(f.up>=2)i+=20;if(f.up>=3)i+=35;
+  if(f.up>=1)i+=15;if(f.up>=2)i+=30;if(f.up>=3)i+=55;
   return i;
 }
 function getTowerStats(t){
