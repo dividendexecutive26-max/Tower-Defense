@@ -91,7 +91,7 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
     <div class="hero-grid" id="herogrid"></div>
     <div style="display:flex;gap:10px;margin-top:6px;">
       <button class="obtn" onclick="confirmHero(true)" style="background:#334155;color:#94a3b8;font-size:11px;padding:8px 16px;">No Hero</button>
-      <button class="obtn" id="heroconfirmbtn" style="font-size:11px;padding:8px 16px;opacity:.4;pointer-events:none;">Next &rarr;</button>
+      <button class="obtn" id="heroconfirmbtn" onclick="confirmHero(false)" style="font-size:11px;padding:8px 16px;opacity:.4;pointer-events:none;">Next &rarr;</button>
     </div>
   </div>
   <div class="overlay" id="landover">
@@ -1083,7 +1083,7 @@ function buildHeroGrid(){
 }
 
 function confirmHero(noHero){
-  if(noHero){selectedHeroKey=null;}
+  if(noHero===true){selectedHeroKey=null;}
   else{if(!pendingHeroKey)return;selectedHeroKey=pendingHeroKey;}
   document.getElementById('heroover').style.display='none';
   document.getElementById('landover').style.display='flex';
