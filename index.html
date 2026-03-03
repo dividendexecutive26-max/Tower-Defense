@@ -921,7 +921,7 @@ function showInfo(obj){
       +'</div>'
       +(canUpg
         ?('<div style="color:#86efac;margin-top:4px">Next: '+FARM_DEF.upgrades[obj.up]+' ($'+upgCost+')</div>'
-          +'<button class="upg-btn patha" style="margin-top:5px;" onclick="upgFarm()" '+(canAfford?'':'disabled')+'>Upgrade Bank $'+upgCost+'</button>')
+          +'<button id="bankupgbtn" class="upg-btn patha" style="margin-top:5px;" onclick="upgFarm()" '+(canAfford?'':'disabled')+'>Upgrade Bank $'+upgCost+'</button>')
         :'<div style="color:#22c55e;margin-top:2px">Max Level!</div>');
   } else {
     var d=TD[obj.type],st=getTowerStats(obj);
@@ -971,32 +971,45 @@ function showHeroInfo(h){
 
 function liveUpdateInfo(obj){
   if(!obj)return;
-  // Update stat numbers
+
+  // -- Stat numbers --
   if(obj===heroUnit){
     var ep=document.getElementById('live-pops'),ed=document.getElementById('live-dmg');
-    if(ep)ep.textContent=obj.pops||0;if(ed)ed.textContent=Math.round(obj.totalDmg||0);
+    if(ep)ep.textContent=obj.pops||0;
+    if(ed)ed.textContent=Math.round(obj.totalDmg||0);
   } else if(!obj.type){
-    var e=document.getElementById('live-earned');if(e)e.textContent='$'+(obj.totalEarned||0);
+    var e=document.getElementById('live-earned');
+    if(e)e.textContent='$'+(obj.totalEarned||0);
   } else {
     var ep2=document.getElementById('live-pops'),ed2=document.getElementById('live-dmg'),es=document.getElementById('live-shots');
-    if(ep2)ep2.textContent=obj.pops||0;if(ed2)ed2.textContent=Math.round(obj.totalDmg||0);if(es)es.textContent=obj.shots||0;
+    if(ep2)ep2.textContent=obj.pops||0;
+    if(ed2)ed2.textContent=Math.round(obj.totalDmg||0);
+    if(es)es.textContent=obj.shots||0;
   }
-  // Dynamically enable/disable upgrade buttons based on current funds
+
+  // -- Button enabled/disabled states --
+  function setBtn(btn,enabled){
+    if(!btn)return;
+    btn.disabled=!enabled;
+    btn.style.opacity=enabled?'1':'0.4';
+    btn.style.cursor=enabled?'pointer':'not-allowed';
+  }
+
   if(obj===heroUnit){
     var hd=HEROES[obj.heroKey];
-    var ba=document.querySelector('.upg-btn.patha'),bb=document.querySelector('.upg-btn.pathb');
-    if(ba)ba.disabled=(obj.upB>0||obj.upA>=3||$m<hd.pathA.costs[obj.upA||0]);
-    if(bb)bb.disabled=(obj.upA>0||obj.upB>=3||$m<hd.pathB.costs[obj.upB||0]);
+    setBtn(document.querySelector('.upg-btn.patha'), obj.upB===0&&obj.upA<3&&$m>=hd.pathA.costs[obj.upA||0]);
+    setBtn(document.querySelector('.upg-btn.pathb'), obj.upA===0&&obj.upB<3&&$m>=hd.pathB.costs[obj.upB||0]);
   } else if(obj.type){
     var d=TD[obj.type];
-    var canA=obj.upA<3&&obj.upB===0,canB=obj.upB<3&&obj.upA===0;
-    var ba2=document.querySelector('.upg-btn.patha'),bb2=document.querySelector('.upg-btn.pathb');
-    if(ba2)ba2.disabled=(!canA||$m<d.pathA.costs[obj.upA||0]);
-    if(bb2)bb2.disabled=(!canB||$m<d.pathB.costs[obj.upB||0]);
+    setBtn(document.querySelector('.upg-btn.patha'), obj.upB===0&&obj.upA<3&&$m>=d.pathA.costs[obj.upA||0]);
+    setBtn(document.querySelector('.upg-btn.pathb'), obj.upA===0&&obj.upB<3&&$m>=d.pathB.costs[obj.upB||0]);
   } else {
-    // Bank
-    var bankBtn=document.querySelector('#info .cbtn');
-    if(bankBtn&&obj.up<3)bankBtn.disabled=($m<FARM_DEF.upgCosts[obj.up]);
+    // Bank — target by stable ID set in showInfo
+    var bankBtn=document.getElementById('bankupgbtn');
+    if(bankBtn&&obj.up<3){
+      var canNow=$m>=FARM_DEF.upgCosts[obj.up];
+      setBtn(bankBtn,canNow);
+    }
   }
 }
 
