@@ -316,27 +316,27 @@ function update(dt){
   parts=parts.filter(function(p){return p.life>0;});
   for(var fi=0;fi<floaties.length;fi++){floaties[fi].y+=floaties[fi].vy*sm;floaties[fi].life-=.025*sm;}
   floaties=floaties.filter(function(f){return f.life>0;});
-  // Farm income drip - only pays out while wave is running and bloons are present
+  // Farm income drip - only while wave running AND bloons on screen
   if(running && bloons.length>0){
     for(var fmi=0;fmi<farms.length;fmi++){
-    var fm=farms[fmi];
-    var incPerSec=farmIncome(fm)/12; // spreads wave income over ~12 seconds
-    fm.farmTimer=(fm.farmTimer||0)+dt*sm;
-    if(fm.farmTimer>=1.0){
-      fm.farmTimer=0;
-      var payout=Math.round(incPerSec);
-      if(payout>0){
-        $m+=payout;fm.totalEarned=(fm.totalEarned||0)+payout;
-        document.getElementById('mdisp').textContent=$m;
-        spawnFloatie(fm.x,fm.y-20,'+$'+payout,'#86efac');
-        updShop();
+      var fm=farms[fmi];
+      var incPerSec=farmIncome(fm)/12;
+      fm.farmTimer=(fm.farmTimer||0)+dt*sm;
+      if(fm.farmTimer>=1.0){
+        fm.farmTimer=0;
+        var payout=Math.round(incPerSec);
+        if(payout>0){
+          $m+=payout;fm.totalEarned=(fm.totalEarned||0)+payout;
+          document.getElementById('mdisp').textContent=$m;
+          spawnFloatie(fm.x,fm.y-20,'+$'+payout,'#86efac');
+          updShop();
+        }
       }
     }
-  } // end farm drip block
+  }
 
   if(running&&spawnQ.length===0&&bloons.length===0&&!cleared){
     cleared=true;running=false;
-    // Grow farms at wave end
     for(var fmi2=0;fmi2<farms.length;fmi2++){
       farms[fmi2].wavesGrown=Math.min(farms[fmi2].wavesGrown+1,3);
     }
