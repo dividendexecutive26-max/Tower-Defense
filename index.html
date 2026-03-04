@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Balloon Blitz TD</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{background:#1a1a2e;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;height:100vh;overflow:hidden;user-select:none;}
+body{background:#1a1a2e;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;height:100vh;overflow:hidden;user-select:none;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;}
 #hdr{width:100%;max-width:480px;display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#16213e;border-bottom:2px solid #0f3460;}
 #canvas-container{position:relative;width:100%;max-width:480px;}
 canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
@@ -28,11 +28,12 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
 #info{display:none;background:#0f3460;border-radius:9px;padding:6px 10px;margin-top:4px;font-size:10px;color:#e2e8f0;}
 #info h3{color:#f5c842;font-size:11px;margin-bottom:2px;}
 .upg-paths{display:flex;gap:6px;margin-top:5px;}
-.upg-path{flex:1;background:#0a2040;border-radius:7px;padding:5px;}
-.upg-path h4{font-size:9px;color:#94a3b8;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
-.upg-btn{width:100%;padding:4px 0;border-radius:5px;border:none;font-size:9px;font-weight:800;cursor:pointer;transition:.15s;margin-top:2px;}
+.upg-path{flex:1;background:#0a2040;border-radius:7px;padding:6px;}
+.upg-path h4{font-size:10px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.upg-btn{width:100%;padding:11px 4px;border-radius:8px;border:none;font-size:11px;font-weight:800;cursor:pointer;transition:.15s;margin-top:3px;line-height:1.3;min-height:44px;}
 .upg-btn.patha{background:#22c55e;color:#fff;}.upg-btn.pathb{background:#f97316;color:#fff;}
 .upg-btn:disabled{opacity:.4;cursor:not-allowed;}
+.upg-btn:active:not(:disabled){transform:scale(.96);}
 .overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.88);align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:50;text-align:center;padding:10px;}
 .overlay h2{font-size:26px;font-weight:900;}.overlay p{color:#fff;font-size:13px;}
 .obtn{padding:10px 24px;border-radius:10px;border:none;background:#f5c842;color:#1a1a2e;font-size:14px;font-weight:900;cursor:pointer;}
@@ -139,6 +140,7 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
   <div id="ctrls">
     <button class="cbtn" id="startbtn" onclick="startWave()">&#9654; Start Wave</button>
     <button class="cbtn" id="spdbtn" onclick="toggleSpd()">&#9889; 1x</button>
+    <button class="cbtn" id="pausebtn" onclick="togglePause()" style="background:#0f766e;color:#fff;">&#9646;&#9646; Pause</button>
     <button class="cbtn" id="abilitybtn" onclick="useAbility()">&#9876; Ability</button>
     <button class="cbtn" id="sellbtn" onclick="sellSel()">&#128176; Sell</button>
   </div>
@@ -297,7 +299,7 @@ var HEROES={
     pathB:{name:'Guardian',levels:['+$30/wave','Lives shield','Fort Aura'],costs:[200,270,430]}}
 };
 
-var TWAVES=10,gameMode='normal';
+var TWAVES=10,gameMode='normal',paused=false;
 var selectedHeroKey=null,pendingHeroKey=null;
 var heroUnit=null,heroCooldownLeft=0,heroAbilityReady=false,fortifyActive=false;
 var $m=200,$l=100,$w=0,$s=1;
@@ -891,17 +893,6 @@ function draw(){
   cx.fillStyle='#fff';cx.font='bold 7px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
   cx.fillText('IN',PP[0].x,PP[0].y);cx.fillText('OUT',lp.x,lp.y);
 
-  // Animated fireflies
-  var rngf2=function(s){var x=Math.sin(s*127.1+now*0.3)*10000;return x-Math.floor(x);};
-  for(var ff=0;ff<18;ff++){
-    var ffx=rngf2(ff*3.1)*W, ffy=rngf2(ff*7.7)*H;
-    if(onPath(ffx,ffy,35))continue;
-    var fflife=0.3+0.7*Math.abs(Math.sin(now*1.4+ff*2.3));
-    cx.globalAlpha=fflife*0.7;
-    var ffg=cx.createRadialGradient(ffx,ffy,0,ffx,ffy,4);
-    ffg.addColorStop(0,'#fff');ffg.addColorStop(0.4,'#bbf7d0');ffg.addColorStop(1,'transparent');
-    cx.fillStyle=ffg;cx.beginPath();cx.arc(ffx,ffy,4,0,Math.PI*2);cx.fill();
-  }
   cx.globalAlpha=1;
 
   // Vignette
@@ -1253,6 +1244,16 @@ function draw(){
     cx.shadowBlur=0;cx.restore();
   }
   cx.globalAlpha=1;
+
+  // Paused overlay
+  if(paused){
+    cx.fillStyle='rgba(0,0,0,0.45)';cx.fillRect(0,0,W,H);
+    cx.fillStyle='rgba(15,118,110,0.9)';
+    var pw=160,ph=56,px2=(W-pw)/2,py2=(H-ph)/2;
+    cx.beginPath();cx.roundRect(px2,py2,pw,ph,12);cx.fill();
+    cx.fillStyle='#fff';cx.font='bold 22px sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('⏸ PAUSED',W/2,H/2);
+  }
 }
 
 function getXY(cX,cY){var r=cv.getBoundingClientRect();return{x:(cX-r.left)*(cv.width/r.width),y:(cY-r.top)*(cv.height/r.height)};}
@@ -1564,8 +1565,20 @@ function updateBossBar(){
   document.getElementById('bosshptxt').textContent=activeBoss.bossName+' '+Math.max(0,Math.round(activeBoss.hp))+'/'+activeBoss.mhp;
 }
 
-function toggleSpd(){$s=$s===1?2:$s===2?3:1;document.getElementById('spdbtn').textContent='Speed '+$s+'x';}
+function toggleSpd(){$s=$s===1?2:$s===2?3:$s===3?4:1;document.getElementById('spdbtn').textContent='⚡ '+$s+'x';}
 
+function togglePause(){
+  paused=!paused;
+  var btn=document.getElementById('pausebtn');
+  if(paused){
+    btn.textContent='▶ Resume';btn.style.background='#b45309';
+    setMsg('Paused — press Resume to continue');
+  } else {
+    btn.textContent='⏸ Pause';btn.style.background='#0f766e';
+    lt=performance.now(); // reset dt so no time-skip on resume
+    setMsg('Resumed!');
+  }
+}
 function startWave(){
   if(over||won||running)return;if($w>=TWAVES)return;
   $w++;cleared=false;activeBoss=null;cancelSel();updateBossBar();
@@ -1645,7 +1658,7 @@ function goMenu(){
 }
 
 function resetGame(){
-  $m=200;$l=100;$w=0;$s=1;running=false;over=false;won=false;cleared=false;
+  $m=200;$l=100;$w=0;$s=1;paused=false;running=false;over=false;won=false;cleared=false;
   towers=[];farms=[];bloons=[];projs=[];parts=[];floaties=[];
   selType=null;selObj=null;prevSnap=null;spawnQ=[];spawnT=0;
   activeBoss=null;heroUnit=null;heroAbilityReady=false;heroCooldownLeft=0;fortifyActive=false;
@@ -1654,7 +1667,8 @@ function resetGame(){
   document.getElementById('wdisp').textContent=0;
   document.getElementById('wmaxdisp').textContent=TWAVES;
   document.getElementById('startbtn').textContent='Start Wave';document.getElementById('startbtn').classList.remove('on');document.getElementById('startbtn').style.background='';
-  document.getElementById('spdbtn').textContent='Speed 1x';
+  document.getElementById('spdbtn').textContent='⚡ 1x';
+  var pb=document.getElementById('pausebtn');pb.textContent='⏸ Pause';pb.style.background='#0f766e';
   document.getElementById('abilitybtn').style.display='none';
   document.getElementById('info').style.display='none';document.getElementById('sellbtn').style.display='none';
   document.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('sel');});
@@ -1670,7 +1684,7 @@ function resetGame(){
   setMsg('Select a tower or farm to see placement slots!');updShop();
 }
 
-function loop(ts){var dt=Math.min((ts-lt)/1000,.05);lt=ts;update(dt);draw();requestAnimationFrame(loop);}
+function loop(ts){if(!paused){var dt=Math.min((ts-lt)/1000,.05);lt=ts;update(dt);}else{lt=ts;}draw();requestAnimationFrame(loop);}
 window.addEventListener('resize',doResize);
 doResize();updShop();lt=performance.now();
 buildHeroGrid();
