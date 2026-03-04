@@ -37,8 +37,8 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
 .overlay h2{font-size:26px;font-weight:900;}.overlay p{color:#fff;font-size:13px;}
 .obtn{padding:10px 24px;border-radius:10px;border:none;background:#f5c842;color:#1a1a2e;font-size:14px;font-weight:900;cursor:pointer;}
 #landover,#heroover{background:linear-gradient(160deg,#0f1b35 0%,#1a1a2e 60%,#0f0f1a 100%);overflow-y:auto;}
-.mode-cards{display:flex;gap:8px;justify-content:center;margin-top:4px;flex-wrap:nowrap;}
-.mode-card{flex:1;max-width:130px;border-radius:13px;padding:12px 7px;cursor:pointer;border:3px solid transparent;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.mode-cards{display:flex;gap:7px;justify-content:center;margin-top:4px;flex-wrap:wrap;}
+.mode-card{flex:1;min-width:100px;max-width:130px;border-radius:13px;padding:12px 7px;cursor:pointer;border:3px solid transparent;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:5px;}
 .mode-card:active{transform:scale(.97);}
 .mode-card.normal{background:linear-gradient(135deg,#1e3a5f,#0f3460);border-color:#4facfe;}
 .mode-card.normal:hover{border-color:#93c5fd;box-shadow:0 0 16px rgba(79,172,254,.35);}
@@ -224,15 +224,15 @@ function nearZone(x,y){
 var TD={
   dart:{cost:80,range:115,dmg:1,rate:1.4,col:'#4facfe',name:'Dart',desc:'Fast reliable shots',
     pathA:{name:'Rapid Fire',levels:['Rate +40%','Rate +60%','ULTRA x3 rate'],costs:[70,90,150]},
-    pathB:{name:'Sharp Shots',levels:['Dmg x2','Dmg x3','Pierce 3'],costs:[80,100,180]}},
+    pathB:{name:'Sharp Shots',levels:['Dmg x2','Dmg x3','Pierce: chain 3 targets'],costs:[80,100,180]}},
   cannon:{cost:200,range:100,dmg:3,rate:.5,col:'#f97316',name:'Cannon',desc:'Explosive splash',
     pathA:{name:'Big Bomb',levels:['Splash +50%','Splash x2','MOAB Shredder'],costs:[130,160,250]},
-    pathB:{name:'Rapid Cannon',levels:['Rate +50%','Rate +80%','Dual target'],costs:[120,150,220]}},
+    pathB:{name:'Rapid Cannon',levels:['Rate +50%','Rate +80%','Dual: +1 cluster bomb'],costs:[120,150,220]}},
   freeze:{cost:150,range:105,dmg:0,rate:.6,col:'#67e8f9',name:'Ice',desc:'Slows balloons',
     pathA:{name:'Deep Freeze',levels:['Freeze 3s','Freeze 5s','Permafrost'],costs:[100,130,200]},
     pathB:{name:'Blizzard',levels:['Range +40%','Area burst','Arctic Storm'],costs:[110,140,210]}},
   sniper:{cost:300,range:270,dmg:5,rate:.38,col:'#c084fc',name:'Sniper',desc:'Long range high dmg',
-    pathA:{name:'Deadly Aim',levels:['Dmg x2','Dmg x3','Crit every 5th'],costs:[160,200,300]},
+    pathA:{name:'Deadly Aim',levels:['Dmg x2','Dmg x3','Chain: hits nearby target'],costs:[160,200,300]},
     pathB:{name:'Full Auto',levels:['Rate +60%','Rate x2','Infinite range'],costs:[150,190,280]}},
   laser:{cost:350,range:135,dmg:2,rate:2.2,col:'#f43f5e',name:'Laser',desc:'Rapid beam chains',
     pathA:{name:'Overcharge',levels:['Dmg x2','Dmg x3','Burn DoT'],costs:[180,220,320]},
@@ -280,7 +280,7 @@ var HEROES={
   frost:{name:'Frost',icon:'❄️',color:'#67e8f9',cost:600,
     desc:'Ice queen. Slows and freezes bloons.',
     abilityName:'Deep Freeze',abilityDesc:'Freeze ALL bloons for 3s',
-    abilityCooldown:35,range:140,dmg:0,rate:1.2,
+    abilityCooldown:35,range:140,dmg:2,rate:1.2,
     pathA:{name:'Permafrost',levels:['Freeze 4s','Freeze 6s','Absolute Zero'],costs:[200,280,450]},
     pathB:{name:'Blizzard',levels:['Range +50%','Slow aura','Ice Storm AoE'],costs:[220,300,500]}},
   zeus:{name:'Zeus',icon:'⚡',color:'#c084fc',cost:700,
@@ -318,11 +318,11 @@ function genWave(w){
   var isBossWave=isBossMode&&(w%10===0);
   if(isBossWave){
     var tier=Math.min(Math.floor(w/10)-1,BOSS_TIERS.length-1);
-    var mx=Math.min(w-2,BT.length-2),n=8+w*2;
+    var mx=Math.min(w-2,BT.length-2),n=Math.min(8+w*2,70);
     for(var i=0;i<n;i++)q.push(Math.min(Math.floor(Math.random()*(mx+1)),mx));
     q.push('boss:'+tier);
   } else {
-    var mx2=Math.min(w-1,BT.length-1),n2=12+w*5;
+    var mx2=Math.min(w-1,BT.length-1),n2=Math.min(12+w*5,90);
     for(var i=0;i<n2;i++)q.push(Math.min(Math.floor(Math.random()*(mx2+1)),mx2));
   }
   return q;
@@ -376,6 +376,12 @@ function hitBloon(b,p){
   if(p.frz){
     if(p.permafrost)b.permafrost=true;
     b.frz=Math.max(b.frz,p.famt||2);
+    if(p.dmg>0){
+      var prev=b.hp;b.hp-=p.dmg;
+      var actual=prev-Math.max(0,b.hp);
+      if(p.srcT)p.srcT.totalDmg=(p.srcT.totalDmg||0)+actual;
+      if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,b.col,b.moab?20:7);updShop();b.dead=true;if(p.srcT)p.srcT.pops=(p.srcT.pops||0)+1;}
+    }
   } else {
     var prev=b.hp;b.hp-=p.dmg;
     var actual=prev-Math.max(0,b.hp);
@@ -395,10 +401,10 @@ function getTowerStats(t){
   var splash=(t.type==='cannon'?28:t.type==='bomb'?35:0);
   var freezeAmt=1.8,permafrost=false,infiniteRange=false,burnMode=false,chainCount=0,clusterCount=0,nukeMode=false;
   var pa=t.upA,pb=t.upB;
-  if(t.type==='dart'){if(pa>=1)rate*=1.4;if(pa>=2)rate*=1.6;if(pa>=3)rate*=3;if(pb>=1)dmg*=2;if(pb>=2)dmg*=3;}
-  if(t.type==='cannon'){if(pa>=1)splash*=1.5;if(pa>=2)splash*=2;if(pa>=3){splash*=3;nukeMode=true;}if(pb>=1)rate*=1.5;if(pb>=2)rate*=1.8;}
+  if(t.type==='dart'){if(pa>=1)rate*=1.4;if(pa>=2)rate*=1.6;if(pa>=3)rate*=3;if(pb>=1)dmg*=2;if(pb>=2)dmg*=3;if(pb>=3)chainCount=3;}
+  if(t.type==='cannon'){if(pa>=1)splash*=1.5;if(pa>=2)splash*=2;if(pa>=3){splash*=3;nukeMode=true;}if(pb>=1)rate*=1.5;if(pb>=2)rate*=1.8;if(pb>=3)clusterCount=1;}
   if(t.type==='freeze'){if(pa>=1)freezeAmt=3;if(pa>=2)freezeAmt=5;if(pa>=3)permafrost=true;if(pb>=1)range*=1.4;if(pb>=2)range*=1.6;if(pb>=3)range*=2;}
-  if(t.type==='sniper'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;if(pb>=1)rate*=1.6;if(pb>=2)rate*=2;if(pb>=3)infiniteRange=true;}
+  if(t.type==='sniper'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;if(pa>=3)chainCount=1;if(pb>=1)rate*=1.6;if(pb>=2)rate*=2;if(pb>=3)infiniteRange=true;}
   if(t.type==='laser'){if(pa>=1)dmg*=2;if(pa>=2)dmg*=3;if(pa>=3)burnMode=true;if(pb>=1)chainCount=2;if(pb>=2)chainCount=4;if(pb>=3)chainCount=6;}
   if(t.type==='bomb'){if(pa>=1){dmg*=2;splash*=1.5;}if(pa>=2)dmg*=3;if(pa>=3){nukeMode=true;splash*=2;}if(pb>=1)clusterCount=3;if(pb>=2)clusterCount=5;if(pb>=3)clusterCount=8;}
   return{dmg:dmg,rate:rate,range:infiniteRange?9999:range,splash:splash,freezeAmt:freezeAmt,
@@ -413,7 +419,7 @@ function update(dt){
 
   for(var i=0;i<bloons.length;i++){
     var b=bloons[i];if(b.dead)continue;
-    if(b.burn>0){b.burn-=dt*sm;b.hp-=0.8*dt*sm;if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,'#fb923c',8);updShop();b.dead=true;continue;}}
+    if(b.burn>0){b.burn-=dt*sm;b.hp-=Math.max(0.8,b.mhp*0.04)*dt*sm;if(b.hp<=0){$m+=b.rew;document.getElementById('mdisp').textContent=$m;splParts(b.x,b.y,'#fb923c',8);updShop();b.dead=true;continue;}}
     var spd=b.spd;
     if(b.permafrost)spd*=.5;else if(b.frz>0){b.frz-=dt*sm;spd*=.12;}
     b.dist+=spd*55*dt*sm;
@@ -1572,7 +1578,9 @@ function startWave(){
     var tier=Math.min(Math.floor($w/10)-1,BOSS_TIERS.length-1);
     setMsg('💀 BOSS WAVE '+$w+' — '+BOSS_TIERS[tier].name+' incoming!');sb.style.background='#7f1d1d';
   } else {
-    setMsg('Wave '+$w+' — '+BT[Math.min($w-1,BT.length-1)].name+' incoming!');sb.style.background='';
+    var waveNames=['','','','','','','','','','','Shadow horde','Demon swarm','Hellflood','Dread march','Abyssal tide','Infernal rush','Phantom siege','Void assault','Chaos wave','Nether storm'];
+    var wn=waveNames[$w]||BT[Math.min($w-1,BT.length-1)].name+' horde';
+    setMsg('Wave '+$w+' — '+wn+'!');sb.style.background='';
   }
 }
 
