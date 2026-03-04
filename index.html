@@ -87,7 +87,10 @@ canvas{display:block;width:100%;touch-action:none;cursor:crosshair;}
 </head>
 <body>
 <div id="hdr">
-  <div style="font-size:13px;font-weight:800;color:#f5c842;">&#128176;<span id="mdisp">200</span></div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <button onclick="homeBtn()" style="background:#1e3a5f;border:1px solid #4facfe;border-radius:7px;color:#93c5fd;font-size:11px;font-weight:800;padding:3px 8px;cursor:pointer;line-height:1.4;">&#8962; Home</button>
+    <div style="font-size:13px;font-weight:800;color:#f5c842;">&#128176;<span id="mdisp">200</span></div>
+  </div>
   <div style="font-size:13px;font-weight:900;color:#f5c842;">&#127880; Balloon Blitz TD</div>
   <div style="font-size:13px;font-weight:800;color:#ff6b6b;">&#10084;<span id="ldisp">100</span>&nbsp;<span style="color:#94a3b8;font-size:11px">W<span id="wdisp">0</span>/<span id="wmaxdisp">10</span></span></div>
 </div>
@@ -1641,6 +1644,10 @@ function startGame(mode){
   resetGame();
 }
 
+function homeBtn(){
+  if($w===0&&!running){goMenu();return;}
+  if(confirm('Return to main menu? Your current game will be lost unless you saved.')){goMenu();}
+}
 function goMenu(){
   document.getElementById('goover').style.display='none';document.getElementById('winover').style.display='none';
   document.getElementById('bossbar').style.display='none';document.getElementById('landover').style.display='none';
