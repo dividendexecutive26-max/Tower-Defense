@@ -775,104 +775,193 @@ function draw(){
   var W=cv.width,H=cv.height,now=performance.now()/1000;
   cx.clearRect(0,0,W,H);
 
-  // Base grass gradient
-  var grassGrad=cx.createLinearGradient(0,0,W,H);
-  grassGrad.addColorStop(0,'#2e7d1e');
-  grassGrad.addColorStop(0.4,'#358a22');
-  grassGrad.addColorStop(0.7,'#2c7a1a');
-  grassGrad.addColorStop(1,'#266814');
-  cx.fillStyle=grassGrad;cx.fillRect(0,0,W,H);
+  // ── HELLSCAPE BATTLEFIELD TERRAIN ──────────────────────────────────────────
+  // Dark volcanic base — deep charcoal with warm undertone
+  var groundGrad=cx.createLinearGradient(0,0,W*0.6,H);
+  groundGrad.addColorStop(0,'#1c1410');
+  groundGrad.addColorStop(0.35,'#211610');
+  groundGrad.addColorStop(0.7,'#1a100a');
+  groundGrad.addColorStop(1,'#150d08');
+  cx.fillStyle=groundGrad;cx.fillRect(0,0,W,H);
 
-  // Grass texture patches
-  cx.save();
   var rngf=function(s){var x=Math.sin(s)*10000;return x-Math.floor(x);};
-  for(var gi=0;gi<180;gi++){
-    var gx2=rngf(gi*3.1)*W,gy2=rngf(gi*7.3)*H;
-    var gsz=3+rngf(gi*1.7)*14;
-    cx.globalAlpha=0.06+rngf(gi*2.9)*0.08;
-    cx.fillStyle=rngf(gi*5.1)>0.5?'#5aba35':'#1a5c10';
-    cx.beginPath();cx.ellipse(gx2,gy2,gsz,gsz*0.6,rngf(gi*4.2)*Math.PI,0,Math.PI*2);cx.fill();
+
+  // Stone tile grid — fake 3D floor with light from top-left
+  cx.save();
+  var tileW=Math.round(W/11),tileH=Math.round(H/14);
+  for(var tgx=0;tgx<12;tgx++){
+    for(var tgy=0;tgy<15;tgy++){
+      var tx0=tgx*tileW,ty0=tgy*tileH;
+      var tseed=tgx*37+tgy*91;
+      var tvar=rngf(tseed)*0.12-0.06;
+      // Tile face — slightly lighter than base
+      cx.globalAlpha=0.55+tvar;
+      var r=Math.round(38+tvar*30),g=Math.round(28+tvar*20),b=Math.round(20+tvar*15);
+      cx.fillStyle='rgb('+r+','+g+','+b+')';
+      cx.fillRect(tx0+1,ty0+1,tileW-2,tileH-2);
+      // Top edge highlight (light from top-left)
+      cx.globalAlpha=0.18+tvar*0.5;
+      cx.fillStyle='#c8a882';
+      cx.fillRect(tx0+1,ty0+1,tileW-2,2);
+      cx.fillRect(tx0+1,ty0+1,2,tileH-2);
+      // Bottom-right shadow edge
+      cx.globalAlpha=0.22;
+      cx.fillStyle='#000';
+      cx.fillRect(tx0+tileW-2,ty0+1,2,tileH-1);
+      cx.fillRect(tx0+1,ty0+tileH-2,tileW-1,2);
+    }
   }
   cx.globalAlpha=1;cx.restore();
 
-  // Decorative trees
+  // Lava crack veins glowing in the ground
+  cx.save();
+  var crackSeeds=[[0.12,0.08,0.28,0.22],[0.65,0.15,0.80,0.35],[0.05,0.55,0.18,0.70],
+    [0.72,0.62,0.88,0.78],[0.35,0.82,0.52,0.95],[0.58,0.40,0.70,0.55],[0.22,0.35,0.40,0.48]];
+  for(var ci2=0;ci2<crackSeeds.length;ci2++){
+    var cs=crackSeeds[ci2];
+    var lx1=cs[0]*W,ly1=cs[1]*H,lx2=cs[2]*W,ly2=cs[3]*H;
+    var lmx=(lx1+lx2)/2+(rngf(ci2*17)*30-15),lmy=(ly1+ly2)/2+(rngf(ci2*23)*20-10);
+    var lavaPulse=0.3+0.2*Math.sin(now*0.8+ci2*1.4);
+    // Outer glow
+    cx.globalAlpha=lavaPulse*0.18;
+    cx.strokeStyle='#ff6600';cx.lineWidth=6;cx.lineCap='round';
+    cx.beginPath();cx.moveTo(lx1,ly1);cx.quadraticCurveTo(lmx,lmy,lx2,ly2);cx.stroke();
+    // Inner bright crack
+    cx.globalAlpha=lavaPulse*0.55;
+    cx.strokeStyle='#ff9933';cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(lx1,ly1);cx.quadraticCurveTo(lmx,lmy,lx2,ly2);cx.stroke();
+    // Hot white core
+    cx.globalAlpha=lavaPulse*0.3;
+    cx.strokeStyle='#ffeeaa';cx.lineWidth=0.5;
+    cx.beginPath();cx.moveTo(lx1,ly1);cx.quadraticCurveTo(lmx,lmy,lx2,ly2);cx.stroke();
+  }
+  cx.globalAlpha=1;cx.restore();
+
+  // Scorched rock formations (replaced trees)
   var treePos=[
     [W*.06,H*.08],[W*.16,H*.04],[W*.05,H*.3],[W*.93,H*.36],
     [W*.95,H*.54],[W*.88,H*.92],[W*.72,H*.94],[W*.52,H*.93],
     [W*.18,H*.88],[W*.07,H*.75],[W*.44,H*.05],[W*.82,H*.05]
   ];
   for(var ti=0;ti<treePos.length;ti++){
-    var tx=treePos[ti][0],ty=treePos[ti][1];
-    if(onPath(tx,ty,42))continue;
+    var tvx=treePos[ti][0],tvy=treePos[ti][1];
+    if(onPath(tvx,tvy,42))continue;
     var ts=0.7+rngf(ti*6.3)*0.55;
     cx.save();
-    cx.globalAlpha=0.22;cx.fillStyle='#000';
-    cx.beginPath();cx.ellipse(tx+3,ty+10*ts,8*ts,3*ts,0,0,Math.PI*2);cx.fill();
+    // Ground shadow
+    cx.globalAlpha=0.35;cx.fillStyle='#000';
+    cx.beginPath();cx.ellipse(tvx+4*ts,tvy+12*ts,10*ts,4*ts,0,0,Math.PI*2);cx.fill();
     cx.globalAlpha=1;
-    cx.fillStyle='#5c3a10';cx.fillRect(tx-2*ts,ty,4*ts,10*ts);
-    cx.fillStyle='#155e08';cx.beginPath();cx.arc(tx,ty,12*ts,0,Math.PI*2);cx.fill();
-    cx.fillStyle='#1e8c0c';cx.beginPath();cx.arc(tx-2*ts,ty-4*ts,9*ts,0,Math.PI*2);cx.fill();
-    cx.beginPath();cx.arc(tx+2*ts,ty-3*ts,8*ts,0,Math.PI*2);cx.fill();
-    cx.fillStyle='#2db812';cx.beginPath();cx.arc(tx,ty-7*ts,8*ts,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=0.4;cx.fillStyle='#80e845';
-    cx.beginPath();cx.arc(tx-2*ts,ty-9*ts,3*ts,0,Math.PI*2);cx.fill();
+    // Rock spire base — dark with 3D shading
+    var rg=cx.createLinearGradient(tvx-10*ts,tvy,tvx+10*ts,tvy);
+    rg.addColorStop(0,'#5a4535');rg.addColorStop(0.35,'#7a6050');rg.addColorStop(0.7,'#3a2820');rg.addColorStop(1,'#1a0f08');
+    cx.fillStyle=rg;
+    cx.beginPath();cx.moveTo(tvx-8*ts,tvy+14*ts);cx.lineTo(tvx-5*ts,tvy-2*ts);cx.lineTo(tvx,tvy-16*ts);cx.lineTo(tvx+5*ts,tvy-2*ts);cx.lineTo(tvx+8*ts,tvy+14*ts);cx.closePath();cx.fill();
+    // Side spires
+    cx.beginPath();cx.moveTo(tvx-12*ts,tvy+12*ts);cx.lineTo(tvx-8*ts,tvy-8*ts);cx.lineTo(tvx-4*ts,tvy+4*ts);cx.closePath();cx.fill();
+    cx.beginPath();cx.moveTo(tvx+4*ts,tvy+4*ts);cx.lineTo(tvx+8*ts,tvy-6*ts);cx.lineTo(tvx+12*ts,tvy+12*ts);cx.closePath();cx.fill();
+    // Top light edge
+    cx.globalAlpha=0.5;cx.fillStyle='#c4a882';
+    cx.beginPath();cx.moveTo(tvx-5*ts,tvy-2*ts);cx.lineTo(tvx,tvy-16*ts);cx.lineTo(tvx+1*ts,tvy-2*ts);cx.closePath();cx.fill();
+    // Ember glow at base
+    var eGlow=0.15+0.12*Math.sin(now*1.3+ti*2.1);
+    cx.globalAlpha=eGlow;
+    var eg2=cx.createRadialGradient(tvx,tvy+12*ts,0,tvx,tvy+12*ts,8*ts);
+    eg2.addColorStop(0,'#ff4400');eg2.addColorStop(1,'transparent');
+    cx.fillStyle=eg2;cx.beginPath();cx.arc(tvx,tvy+12*ts,8*ts,0,Math.PI*2);cx.fill();
     cx.globalAlpha=1;cx.restore();
   }
 
-  // Decorative rocks
+  // Skull/bone decoration piles (replaced rocks)
   var rockPos=[
     [W*.38,H*.09],[W*.75,H*.3],[W*.22,H*.72],
     [W*.62,H*.89],[W*.07,H*.5],[W*.93,H*.68]
   ];
   for(var ri=0;ri<rockPos.length;ri++){
-    var rx=rockPos[ri][0],ry=rockPos[ri][1];
-    if(onPath(rx,ry,38))continue;
+    var rvx=rockPos[ri][0],rvy=rockPos[ri][1];
+    if(onPath(rvx,rvy,38))continue;
     var rs=0.6+rngf(ri*9.1)*0.5;
     cx.save();
-    cx.globalAlpha=0.15;cx.fillStyle='#000';
-    cx.beginPath();cx.ellipse(rx+2,ry+5,9*rs,3*rs,0,0,Math.PI*2);cx.fill();
+    // Drop shadow
+    cx.globalAlpha=0.25;cx.fillStyle='#000';
+    cx.beginPath();cx.ellipse(rvx+3,rvy+6,10*rs,4*rs,0,0,Math.PI*2);cx.fill();
     cx.globalAlpha=1;
-    cx.fillStyle='#5a6270';cx.beginPath();cx.ellipse(rx,ry,8*rs,5*rs,-.3,0,Math.PI*2);cx.fill();
-    cx.fillStyle='#8a929e';cx.beginPath();cx.ellipse(rx-1*rs,ry-1*rs,5*rs,3*rs,-.3,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=0.35;cx.fillStyle='#d1d5db';
-    cx.beginPath();cx.ellipse(rx-2*rs,ry-2*rs,2*rs,1.2*rs,-.5,0,Math.PI*2);cx.fill();
+    // Main boulder — 3D shaded
+    var brg=cx.createRadialGradient(rvx-3*rs,rvy-3*rs,1,rvx,rvy,9*rs);
+    brg.addColorStop(0,'#8a7a6a');brg.addColorStop(0.5,'#5a4a3a');brg.addColorStop(1,'#2a1a10');
+    cx.fillStyle=brg;
+    cx.beginPath();cx.ellipse(rvx,rvy,9*rs,7*rs,-.2,0,Math.PI*2);cx.fill();
+    // Highlight
+    cx.globalAlpha=0.4;cx.fillStyle='#d4b896';
+    cx.beginPath();cx.ellipse(rvx-3*rs,rvy-3*rs,3*rs,1.5*rs,-.5,0,Math.PI*2);cx.fill();
+    // Small skulls in the pile
+    cx.globalAlpha=0.7;cx.fillStyle='#c8b99a';
+    cx.beginPath();cx.arc(rvx+4*rs,rvy+2*rs,2.5*rs,0,Math.PI*2);cx.fill();
+    cx.fillStyle='#1a1008';
+    cx.beginPath();cx.arc(rvx+3.3*rs,rvy+1.8*rs,0.7*rs,0,Math.PI*2);cx.fill();
+    cx.beginPath();cx.arc(rvx+4.7*rs,rvy+1.8*rs,0.7*rs,0,Math.PI*2);cx.fill();
     cx.globalAlpha=1;cx.restore();
   }
 
-  // Path shadow
+  // ── HELL PATH ────────────────────────────────────────────────────────────
   cx.lineCap='round';cx.lineJoin='round';
-  cx.strokeStyle='rgba(0,0,0,0.42)';cx.lineWidth=50;
   cx.beginPath();cx.moveTo(PP[0].x,PP[0].y);
-  for(var pi2=1;pi2<PP.length;pi2++)cx.lineTo(PP[pi2].x,PP[pi2].y);cx.stroke();
-  // Path dirt base — rich brown
-  cx.strokeStyle='#6b3f1e';cx.lineWidth=42;cx.stroke();
-  // Mid layer — warm tan
-  cx.strokeStyle='#9c6438';cx.lineWidth=36;cx.stroke();
-  // Light centre — highlight
-  cx.strokeStyle='#c28850';cx.lineWidth=24;cx.stroke();
-  // Worn center strip — sandy
-  cx.strokeStyle='rgba(220,180,120,0.55)';cx.lineWidth=12;cx.stroke();
-  // Edge trim
-  cx.strokeStyle='rgba(0,0,0,0.2)';cx.lineWidth=2;cx.setLineDash([7,5]);cx.stroke();cx.setLineDash([]);
+  for(var pi2=1;pi2<PP.length;pi2++)cx.lineTo(PP[pi2].x,PP[pi2].y);
 
-  // Pebbles on path
+  // Deep drop shadow
+  cx.strokeStyle='rgba(0,0,0,0.7)';cx.lineWidth=52;cx.stroke();
+  // Outer dark border
+  cx.strokeStyle='#1a0a00';cx.lineWidth=46;cx.stroke();
+  // Dark stone base
+  cx.strokeStyle='#2d1f14';cx.lineWidth=40;cx.stroke();
+  // Mid stone — warm grey-brown cobble tone
+  cx.strokeStyle='#4a3526';cx.lineWidth=34;cx.stroke();
+  // Stone surface
+  cx.strokeStyle='#5c4535';cx.lineWidth=26;cx.stroke();
+  // Worn centre — lighter stones
+  cx.strokeStyle='#7a6248';cx.lineWidth=16;cx.stroke();
+  // Hot centre glow — lava seeping through cracks
+  var pathGlow=0.12+0.08*Math.sin(now*0.9);
+  cx.globalAlpha=pathGlow;
+  cx.strokeStyle='#ff4400';cx.lineWidth=6;cx.stroke();
+  cx.globalAlpha=1;
+
+  // Cobblestone mortar lines (grid overlay on path)
   cx.save();
   var pl2=pathLen();
-  for(var pbi=0;pbi<50;pbi++){
-    var pbseed=pbi*13.7,pbt=pbi/50;
+  for(var pbi=0;pbi<60;pbi++){
+    var pbseed=pbi*13.7,pbt=pbi/60;
     var pp2=pathPos(pbt*pl2);
-    var pbx=pp2.x+(rngf(pbseed)*22-11),pby=pp2.y+(rngf(pbseed+1)*18-9);
-    cx.globalAlpha=0.2+rngf(pbseed+2)*0.25;
-    cx.fillStyle=rngf(pbseed+3)>0.5?'#c4a882':'#5c4028';
-    cx.beginPath();cx.ellipse(pbx,pby,1.2+rngf(pbseed+4)*2.2,0.8+rngf(pbseed+5)*1.4,rngf(pbseed+6)*Math.PI,0,Math.PI*2);cx.fill();
+    var pbx=pp2.x+(rngf(pbseed)*30-15),pby=pp2.y+(rngf(pbseed+1)*22-11);
+    var pbw=6+rngf(pbseed+4)*10,pbh=5+rngf(pbseed+5)*7;
+    var pba=rngf(pbseed+6)*Math.PI;
+    // Stone block face
+    cx.globalAlpha=0.12+rngf(pbseed+2)*0.1;
+    cx.fillStyle=rngf(pbseed+3)>0.5?'#8a7060':'#3a2818';
+    cx.beginPath();cx.ellipse(pbx,pby,pbw,pbh,pba,0,Math.PI*2);cx.fill();
+    // Stone highlight top-left
+    cx.globalAlpha=0.08;cx.fillStyle='#d4b896';
+    cx.beginPath();cx.ellipse(pbx-pbw*.3,pby-pbh*.3,pbw*.5,pbh*.4,pba,0,Math.PI*2);cx.fill();
+  }
+  // Lava crack dots along path centre
+  for(var lci=0;lci<25;lci++){
+    var lct=lci/25;
+    var lcp=pathPos(lct*pl2);
+    var lcPulse=0.4+0.35*Math.sin(now*2+lci*0.7);
+    cx.globalAlpha=lcPulse*0.6;
+    var lcg=cx.createRadialGradient(lcp.x,lcp.y,0,lcp.x,lcp.y,2.5);
+    lcg.addColorStop(0,'#ffcc44');lcg.addColorStop(0.5,'#ff4400');lcg.addColorStop(1,'transparent');
+    cx.fillStyle=lcg;cx.beginPath();cx.arc(lcp.x,lcp.y,2.5,0,Math.PI*2);cx.fill();
   }
   cx.globalAlpha=1;cx.restore();
 
-  // Animated glowing path edges
-  var edgePulse=0.06+0.04*Math.sin(now*1.2);
-  cx.strokeStyle='rgba(255,160,40,'+edgePulse+')';cx.lineWidth=46;
+  // Outer lava edge glow
+  var edgePulse=0.18+0.1*Math.sin(now*1.2);
   cx.beginPath();cx.moveTo(PP[0].x,PP[0].y);
-  for(var pi3=1;pi3<PP.length;pi3++)cx.lineTo(PP[pi3].x,PP[pi3].y);cx.stroke();
+  for(var pi3=1;pi3<PP.length;pi3++)cx.lineTo(PP[pi3].x,PP[pi3].y);
+  cx.globalAlpha=edgePulse;
+  cx.strokeStyle='#ff3300';cx.lineWidth=50;cx.stroke();
+  cx.globalAlpha=1;
 
   // Entry marker — glowing portal
   var inPulse=0.7+0.3*Math.sin(now*2);
@@ -892,10 +981,19 @@ function draw(){
 
   cx.globalAlpha=1;
 
-  // Vignette
-  var vig=cx.createRadialGradient(W/2,H/2,H*.15,W/2,H/2,H*.9);
-  vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,'rgba(0,0,0,0.32)');
+  // Vignette + hellfire atmosphere
+  var vig=cx.createRadialGradient(W/2,H/2,H*.1,W/2,H/2,H*1.0);
+  vig.addColorStop(0,'rgba(0,0,0,0)');
+  vig.addColorStop(0.6,'rgba(0,0,0,0.15)');
+  vig.addColorStop(1,'rgba(0,0,0,0.65)');
   cx.fillStyle=vig;cx.fillRect(0,0,W,H);
+  // Subtle red ambient at corners
+  var cornerGlow=cx.createRadialGradient(0,H,1,0,H,H*0.7);
+  cornerGlow.addColorStop(0,'rgba(180,20,0,0.12)');cornerGlow.addColorStop(1,'transparent');
+  cx.fillStyle=cornerGlow;cx.fillRect(0,0,W,H);
+  var cornerGlow2=cx.createRadialGradient(W,0,1,W,0,H*0.7);
+  cornerGlow2.addColorStop(0,'rgba(120,0,180,0.08)');cornerGlow2.addColorStop(1,'transparent');
+  cx.fillStyle=cornerGlow2;cx.fillRect(0,0,W,H);
 
   if(selType&&selType!=='farm'){
     var pulse=0.45+0.2*Math.sin(now*3);
